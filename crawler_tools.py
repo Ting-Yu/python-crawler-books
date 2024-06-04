@@ -1,4 +1,7 @@
+import logging
+
 import requests
+from botocore.exceptions import ClientError
 from bs4 import BeautifulSoup
 
 import time
@@ -10,7 +13,7 @@ from datetime import datetime
 import pandas as pd
 
 import humanfriendly
-
+import boto3
 
 # Get the current timestamp
 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -102,6 +105,7 @@ def download_image(img_url, filename):
             # Record success
             logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Success'}, f'image_success-{logger.timestamp}.csv')
             logger.log_url(img_url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
+            return filename
         else:
             # Record failure
             logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
@@ -221,6 +225,36 @@ def export_excel(book_data):
     df.to_excel(filename, index=False)
 
     print(f"The number of Books is {len(book_data)}")
+
+def upload_file_to_s3(file_path, bucket, object_name=None):
+    # 如果沒有指定 object_name，則使用檔案名稱
+    if object_name is None:
+        object_name = os.path.basename(file_path)
+
+    # 將存入 bucket 的路徑設定為 books/images
+    object_name = os.path.join('books', 'images', object_name)
+
+    # 從環境變數中獲取 AWS 憑證
+    aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+    aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+    # 建立 S3 client
+    s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+
+    # 上傳檔案並設定為公開
+    try:
+        with open(file_path, "rb") as data:
+            s3.upload_fileobj(data, bucket, object_name, ExtraArgs={'ACL': 'public-read'})
+        print(f"Successfully uploaded {file_path} to {bucket}/{object_name}")
+    except ClientError as e:
+        logging.error(e)
+        print(f"Failed to upload {e}")
+        return None
+
+    # 建立檔案的公開 URL
+    file_url = f"https://{bucket}.s3.amazonaws.com/{object_name}"
+
+    return file_url
 
 class PerformanceMonitor:
     def __init__(self):

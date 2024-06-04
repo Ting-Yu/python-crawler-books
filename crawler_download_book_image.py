@@ -35,7 +35,7 @@ def crawl_search_book_info(url):
         return None
 
 def find_cheapest_book(soup):
-    book_info = []  # 建立一個空字典來儲存書的資訊
+    image_info = {}  # 建立一個空字典來儲存書的資訊
     books = soup.find_all('div', class_='table-td')
 
     min_price = float('inf')
@@ -58,15 +58,12 @@ def find_cheapest_book(soup):
     if cheapest_book_url:
         cheapest_book_url = 'https:' + cheapest_book_url
         # print(cheapest_book_url)
-        book_data = crawl_book_info(cheapest_book_url)
-        book_info.append(book_data)
+        image_info = crawl_book_info(cheapest_book_url)
 
-        crawler_tools.export_excel([book_data])
-
-    return book_info
+    return image_info
 
 def crawl_book_info(url):
-    book_info = {}  # 建立一個空字典來儲存書的資訊
+    image_info = {}  # 建立一個空字典來儲存圖片的資訊
 
     path = urlparse(url).path
     filename = os.path.basename(path)
@@ -78,9 +75,9 @@ def crawl_book_info(url):
 
     soup = crawler_tools.get_page_content(url)  # Pass the logger instance as an argument
     if soup is not None:
-        filename = f"output_{filename}.html"
+        # filename = f"output_{filename}.html"
         # 將 soup 寫入檔案
-        crawler_tools.write_soup_to_file(soup, filename)  # Pass the logger instance as an argument
+        # crawler_tools.write_soup_to_file(soup, filename)  # Pass the logger instance as an argument
 
         # 解析資料
         book_info = crawler_tools.extract_book_info(url, soup)
@@ -88,11 +85,18 @@ def crawl_book_info(url):
         # 下載圖片
         img_url = book_info.get('圖片')
         if img_url:
+            filename = book_info.get('ISBN/ISSN')
             img_filename = f"download_{filename.split('.')[0]}.jpg"
-            crawler_tools.download_image(img_url, img_filename)  # Pass the logger instance as an argument
+            img_filename = crawler_tools.download_image(img_url, img_filename)  # Pass the logger instance as an argument
+            print('img_filename', img_filename)
+            s3_url = crawler_tools.upload_file_to_s3(img_filename, 'fribooker')
+            image_info ={
+                'image_directory': img_filename,
+                'image_url': img_url,
+                's3_url': s3_url
+            }
 
-    return book_info
-
+    return image_info
 
 def is_valid_isbn(isbn: str) -> bool:
     """Check if the input string is a valid ISBN number."""

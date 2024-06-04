@@ -1,13 +1,26 @@
-import crawler_search_book_by_isbn
+import crawler_search_book
 import crawler_book_by_product_number
+import crawler_download_book_image
 import crawler_tools
 
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-@app.route('/crawler-search-book-by-isbn', methods=['POST'], endpoint='crawlerSearchBookByIsbn')
-def crawlerSearchBookByIsbn():
+@app.route('/crawler-download-book-image', methods=['POST'], endpoint='crawlerDownloadBookImage')
+def crawlerDownloadBookImage():
+    # curl -X POST -H "Content-Type: application/json" -d '{"url":"https://search.books.com.tw/search/query/key/9789865069100"}' http://127.0.0.1:5000/crawler-download-book-image-by-isbn
+    url = request.json.get('url')
+    print('searchCrawl', url)
+
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    book_info = crawler_download_book_image.crawl_search_book_info(url)
+    return jsonify(book_info)
+
+@app.route('/crawler-search-book', methods=['POST'], endpoint='crawlerSearchBook')
+def crawlerSearchBook():
     # curl -X POST -H "Content-Type: application/json" -d '{"url":"https://search.books.com.tw/search/query/key/9789865069100"}' http://127.0.0.1:5000/crawler-search-book-by-isbn
     url = request.json.get('url')
     print('searchCrawl', url)
@@ -15,7 +28,7 @@ def crawlerSearchBookByIsbn():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
-    book_info = crawler_search_book_by_isbn.crawl_search_book_info(url)
+    book_info = crawler_search_book.crawl_search_book_info(url)
     return jsonify(book_info)
 
 @app.route('/crawler-book-by-product-number', methods=['POST'], endpoint='crawlerBookByProductNumber')
@@ -52,7 +65,7 @@ if __name__ == "__main__":
 #         monitor = crawler_tools.PerformanceMonitor()
 #         monitor.start()
 #
-#         crawler_search_book_by_isbn.crawl_search_book_info(url)
+#         crawler_search_book.crawl_search_book_info(url)
 #
 #         monitor.stop()
 #         monitor.report()

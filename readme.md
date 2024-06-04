@@ -31,11 +31,22 @@ python flask_api.py
 
 #### 使用產品編號爬取書籍資訊
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"url":"https://www.books.com.tw/products/0010000009"}' http://127.0.0.1:5000/crawl
+curl -X POST -H "Content-Type: application/json" -d '{"url":"https://www.books.com.tw/products/0010000009"}' http://127.0.0.1:5000/crawler-book-by-product-number
 ```
 #### 使用搜尋 isbn 方式取得書籍資訊
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"url":"https://search.books.com.tw/search/query/key/9789865069100"}' http://127.0.0.1:5000/search
+curl -X POST -H "Content-Type: application/json" -d '{"url":"https://search.books.com.tw/search/query/key/9789865069100"}' http://127.0.0.1:5000/crawler-search-book
+```
+#### 搜尋 ISBN 下載圖片
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"url":"https://search.books.com.tw/search/query/key/9789865069100"}' http://127.0.0.1:5000/crawler-download-book-image
+```
+
+ps. 由於檔案是設定直接上傳到 s3 因此需要在本地設定環境變數 （例如 ~/.bashrc 或 ~/.bash_profile），需執行 source ~/.bashrc 才會生效
+
+```bash
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
 ```
 
 以下是一個使用 AWS EC2 和 Nginx 來部署此 API 的範例：
