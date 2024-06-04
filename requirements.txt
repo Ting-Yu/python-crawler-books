@@ -1,0 +1,6 @@
+requests==2.31.0
+beautifulsoup4==4.12.3
+psutil==5.9.8
+pandas==2.0.3
+humanfriendly==10.0
+flask==3.0.3
