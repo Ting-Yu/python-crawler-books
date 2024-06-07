@@ -16,7 +16,9 @@ import humanfriendly
 import boto3
 
 # Get the current timestamp
-timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+# timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+# 考量到正式環境可能會有多個使用者同時使用，因此將 timestamp 設定為固定值
+timestamp = os.environ.get('DOWNLOAD_PATH', "no_set_downloads_path")
 
 class Logger:
     def __init__(self, timestamp):

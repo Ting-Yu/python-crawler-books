@@ -1,15 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 
-import crawler_tools
-from crawler_tools import timestamp
+from . import crawler_tools
+from .crawler_tools import timestamp
 
 from urllib.parse import urlparse
 import os
 
 import re
 
-from flask import Flask, jsonify, request
+from flask import jsonify, request
 #
 # app = Flask(__name__)
 #

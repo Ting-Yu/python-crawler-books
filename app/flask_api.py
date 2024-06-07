@@ -1,7 +1,6 @@
-import crawler_search_book
-import crawler_book_by_product_number
-import crawler_download_book_image
-import crawler_tools
+from . import crawler_search_book
+from . import crawler_book_by_product_number
+from . import crawler_download_book_image
 
 from flask import Flask, jsonify, request
 
@@ -44,10 +43,13 @@ def crawlerBookByProductNumber():
     return jsonify(book_info)
 
 if __name__ == "__main__":
-    app.run(use_reloader=False)
-
+    app.run(host='0.0.0.0')
 
 # 這邊是方便本地測試用而留下來的
+
+# if __name__ == "__main__":
+#     app.run(use_reloader=False)
+
 # if __name__ == "__main__":
 #
 #     # url = "https://search.books.com.tw/search/query/key/9789865069100"

@@ -9,8 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 
 # from flask import Flask, jsonify, request
-import crawler_tools
-from crawler_tools import timestamp
+from . import crawler_tools
+from .crawler_tools import timestamp
 
 # app = Flask(__name__)
 #
