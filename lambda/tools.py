@@ -5,14 +5,14 @@ from botocore.exceptions import ClientError
 from bs4 import BeautifulSoup
 
 import time
-import psutil
+# import psutil
 import os
 import random
 
-from datetime import datetime
-import pandas as pd
+# from datetime import datetime
+# import pandas as pd
 
-import humanfriendly
+# import humanfriendly
 import boto3
 
 # Get the current timestamp
@@ -25,8 +25,9 @@ class Logger:
         self.timestamp = timestamp
 
     def log_to_csv(self, data, filename):
-        df = pd.DataFrame([data])
-        df.to_csv(os.path.join(self.timestamp, 'logs', filename), mode='a', index=False)
+        return None
+        # df = pd.DataFrame([data])
+        # df.to_csv(os.path.join(self.timestamp, 'logs', filename), mode='a', index=False)
 
     def write_to_file(self, content, filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -47,48 +48,49 @@ def create_directory(dir_name):
     os.makedirs(dir_name, exist_ok=True)
 
 def get_page_content(url):
-    logger = Logger(timestamp)  # Create an instance of Logger
+    # logger = Logger(timestamp)  # Create an instance of Logger
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
         }
         # response = requests.get(url, headers=headers, timeout=5)
         response = requests.get(url, headers=headers, timeout=5, allow_redirects=True)
+        # return response.content
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             # Check if the page contains the error message
             if "瀏覽方式錯誤" in soup.text or "Please check your ip address" in soup.text:
-                print(f"Access blocked when attempting to get content from {url}")
-                logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Access blocked'},
-                                  f'url_failed-{logger.timestamp}.csv')
-                logger.log_url(url, False, response.status_code, 'Access blocked')  # 記錄失敗的 URL 和 HTTP 狀態碼
+                # print(f"Access blocked when attempting to get content from {url}")
+                # logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Access blocked'},
+                #                   f'url_failed-{logger.timestamp}.csv')
+                # logger.log_url(url, False, response.status_code, 'Access blocked')  # 記錄失敗的 URL 和 HTTP 狀態碼
                 return None
-            print(f"Successfully got content from {url}")
-            time.sleep(random.randint(2, 5))  # pause for 2 to 5 seconds
+            # print(f"Successfully got content from {url}")
+            # time.sleep(random.randint(2, 5))  # pause for 2 to 5 seconds
             # Record success
-            logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Success'}, f'url_success-{logger.timestamp}.csv')
-            logger.log_url(url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
+            # logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Success'}, f'url_success-{logger.timestamp}.csv')
+            # logger.log_url(url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
             return soup
         else:
-            print(f"Failed to get content from {url}")
+            # print(f"Failed to get content from {url}")
             # Record failure
-            logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Failed'}, f'url_failed-{logger.timestamp}.csv')
-            logger.log_url(url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+            # logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Failed'}, f'url_failed-{logger.timestamp}.csv')
+            # logger.log_url(url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
             return None
     except requests.exceptions.HTTPError as e:
-        status_code = e.response.status_code
-        print(f"HTTP error for {url} occurred with status code {status_code}: {e}")
+        # status_code = e.response.status_code
+        # print(f"HTTP error for {url} occurred with status code {status_code}: {e}")
 
-        logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
-                          f'url_failed-{logger.timestamp}.csv')
-        logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        # logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
+        #                   f'url_failed-{logger.timestamp}.csv')
+        # logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
         return None
     except requests.exceptions.RequestException as e:
-        status_code = e.response.status_code
-        print(f"Request error for {url}: {e}")
-        logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
-                          f'url_failed-{logger.timestamp}.csv')
-        logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        # status_code = e.response.status_code
+        # print(f"Request error for {url}: {e}")
+        # logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
+        #                   f'url_failed-{logger.timestamp}.csv')
+        # logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
         return None
 
 def download_image(img_url, filename):
@@ -105,29 +107,29 @@ def download_image(img_url, filename):
                 for chunk in response.iter_content(1024):
                     file.write(chunk)
             # Record success
-            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Success'}, f'image_success-{logger.timestamp}.csv')
-            logger.log_url(img_url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
+            # logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Success'}, f'image_success-{logger.timestamp}.csv')
+            # logger.log_url(img_url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
             return filename
-        else:
+        # else:
             # Record failure
-            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
-            logger.log_url(img_url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+            # logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
+            # logger.log_url(img_url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code
-        print(f"HTTP error for {img_url} occurred with status code {status_code}: {e}")
-        logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
-                          f'image_failed-{logger.timestamp}.csv')
-        logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        # print(f"HTTP error for {img_url} occurred with status code {status_code}: {e}")
+        # logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
+        #                   f'image_failed-{logger.timestamp}.csv')
+        # logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
     except requests.exceptions.RequestException as e:
         status_code = e.response.status_code
-        print(f"Request error for {img_url}: {e}")
-        logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
-                          f'image_failed-{logger.timestamp}.csv')
-        logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
-def write_soup_to_file(soup, filename):
-    logger = Logger(timestamp)  # Create an instance of Logger
-    filename = os.path.join(logger.timestamp, 'htmls', filename)
-    logger.write_to_file(str(soup.prettify()), filename)
+        # print(f"Request error for {img_url}: {e}")
+        # logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
+        #                   f'image_failed-{logger.timestamp}.csv')
+        # logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+# def write_soup_to_file(soup, filename):
+    # logger = Logger(timestamp)  # Create an instance of Logger
+    # filename = os.path.join(logger.timestamp, 'htmls', filename)
+    # logger.write_to_file(str(soup.prettify()), filename)
 
 def extract_book_info(url, soup):
     category_elems = soup.find_all('li', {'property': 'itemListElement'})
@@ -221,10 +223,10 @@ def export_excel(book_data):
     # 將檔案路徑改為新建立的資料夾
     filename = os.path.join(timestamp, excel_filename)
     # 將字典列表轉換為 DataFrame
-    df = pd.DataFrame(book_data)
+    # df = pd.DataFrame(book_data)
 
     # 將 DataFrame 輸出到 Excel 檔案
-    df.to_excel(filename, index=False)
+    # df.to_excel(filename, index=False)
 
     print(f"The number of Books is {len(book_data)}")
 
@@ -258,35 +260,35 @@ def upload_file_to_s3(file_path, bucket, object_name=None):
 
     return file_url
 
-class PerformanceMonitor:
-    def __init__(self):
-        self.process = psutil.Process(os.getpid())
-        self.start_time = None
-        self.start_datetime = None
-        self.start_memory = None
-        self.end_time = None
-        self.end_datetime = None
-        self.end_memory = None
-
-    def start(self):
-        self.start_time = time.time()
-        self.start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.start_memory = self.process.memory_info().rss
-
-    def stop(self):
-        self.end_time = time.time()
-        self.end_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.end_memory = self.process.memory_info().rss
-
-    def report(self):
-        execution_time = self.end_time - self.start_time
-        memory_usage = self.end_memory - self.start_memory
-
-        print(f"The program started at {self.start_datetime}.")
-        print(f"The program ended at {self.end_datetime}.")
-
-        execution_time = humanfriendly.format_timespan(execution_time)
-        memory_usage = humanfriendly.format_size(memory_usage)
-
-        print(f"The program took {execution_time} to complete.")
-        print(f"The loop used {memory_usage} of memory.")
+# class PerformanceMonitor:
+#     def __init__(self):
+#         self.process = psutil.Process(os.getpid())
+#         self.start_time = None
+#         self.start_datetime = None
+#         self.start_memory = None
+#         self.end_time = None
+#         self.end_datetime = None
+#         self.end_memory = None
+#
+#     def start(self):
+#         self.start_time = time.time()
+#         self.start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+#         self.start_memory = self.process.memory_info().rss
+#
+#     def stop(self):
+#         self.end_time = time.time()
+#         self.end_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+#         self.end_memory = self.process.memory_info().rss
+#
+#     def report(self):
+#         execution_time = self.end_time - self.start_time
+#         memory_usage = self.end_memory - self.start_memory
+#
+#         print(f"The program started at {self.start_datetime}.")
+#         print(f"The program ended at {self.end_datetime}.")
+#
+#         execution_time = humanfriendly.format_timespan(execution_time)
+#         memory_usage = humanfriendly.format_size(memory_usage)
+#
+#         print(f"The program took {execution_time} to complete.")
+#         print(f"The loop used {memory_usage} of memory.")
