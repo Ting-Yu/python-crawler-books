@@ -1,0 +1,16 @@
+{
+    "default": "local",
+    "disks": {
+        "local": {
+            "driver": "local",
+            "root": "./"
+        },
+        "s3": {
+            "driver": "s3",
+            "key": "your_access_key_id",
+            "secret": "your_secret_access_key",
+            "region": "your_region",
+            "bucket": "your_bucket"
+        }
+    }
+}

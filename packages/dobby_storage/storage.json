@@ -1,0 +1,26 @@
+{
+    "default": "local",
+    "disks": {
+        "local": {
+            "driver": "local",
+            "root": "./"
+        },
+        "s3": {
+            "driver": "s3",
+            "key": "your_access_key_id",
+            "secret": "your_secret_access_key",
+            "region": "your_region",
+            "bucket": "your_bucket"
+        },
+        "ftp": {
+            "driver": "ftp",
+            "server": "ftp.example.com",
+            "user": "username",
+            "password": "password"
+        },
+        "google_drive": {
+            "driver": "google_drive",
+            "auth_path": "path/to/client_secrets.json"
+        }
+    }
+}

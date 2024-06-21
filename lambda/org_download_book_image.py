@@ -10,7 +10,7 @@ import os
 
 import re
 import boto3
-from dobby_storage.storage import FileStorage
+
 
 def lambda_handler(event, context):
     try:
@@ -152,10 +152,7 @@ def crawl_book_info(url):
 
             # print('img_filename', img_filename)
             # s3_url = tools.upload_file_to_s3(img_filename, 'fribooker')
-            # s3_url = upload_file_to_s3(response.raw, 'fribooker', img_filename)
-            file_storage = FileStorage(config_path='dobby_storage/storage.json')
-            s3_url = file_storage.save(response.raw, img_filename, bucket_name='fribooker', use_fileobj=True)
-
+            s3_url = upload_file_to_s3(response.raw, 'fribooker', img_filename)
             return {
                 'filename': filename,
                 'image_directory': img_filename,
