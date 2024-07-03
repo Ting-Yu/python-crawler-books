@@ -8,6 +8,15 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, DateTime, BigInteger
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from sqlalchemy.orm import Session
+from decimal import Decimal
+
 
 def get_page_content(url):
     # logger = Logger(timestamp)  # Create an instance of Logger
@@ -152,10 +161,139 @@ def extract_book_info(url, soup, number):
         '出版社名稱': publisher,
         '出版日期': publish_date,
         '定價': price,
+        '開數': next((item for item in spec if 'cm' in item), None),
+        '平/精裝': next((item for item in spec if '裝' in item), None),
+        '頁數': next((int(''.join(filter(str.isdigit, item))) for item in spec if '頁' in item and ''.join(filter(str.isdigit, item)) != ''), 0),
+        '版次': next((item for item in spec if '版' in item), None),
+        '級別': next((item for item in spec if '級' in item), None),
+        '印刷': next((item for item in spec if '刷' in item), None),
     }
 
 
+# 資料庫連接設定
+DB_USERNAME = ''
+DB_PASSWORD = ''
+DB_HOST = ''
+DB_NAME = ''
+
+# 建立資料庫連線
+engine = create_engine(f'mysql+mysqlconnector://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}')
+
+# 建立溝通方式
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 建立繼承
+Base = declarative_base()
+
+
+# 測試連線
+def test_connection():
+    try:
+        with engine.connect() as connection:
+            print("成功連接到資料庫！")
+    except Exception as e:
+        print(f"連接失敗：{str(e)}")
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def get_all_books(db: Session, skip: int = 0, limit: int = 30):
+    return db.query(Book).filter(
+        Book.book_crawler_id.is_not(None),
+        # Book.open_number.is_(None),
+        # Book.book_crawler_id > '0010979860',
+        Book.open_number.not_like('%cm%')
+    ).offset(skip).limit(limit).all()
+
+
+def use_get_all_books():
+    db = SessionLocal()
+    # 使用 get_all_categories 進行分頁查詢
+    page = 1
+    page_size = 50
+    while True:
+        books = get_all_books(db, skip=(page - 1) * page_size, limit=page_size)
+        if not books:
+            break
+
+        print(f"Page {page}:")
+        for book in books:
+            book_crawler_id = book.book_crawler_id
+            time.sleep(0.5)
+            print(f" Get - {book_crawler_id}: {book.open_number}")
+            url = f"https://www.books.com.tw/products/{book_crawler_id}"
+            response = crawl_book_info(url, book_crawler_id)
+            decoded_result = response
+            # print(f"decoded_result {decoded_result} ")
+            if all(key in decoded_result for key in ['開數', '平/精裝', '頁數', '版次', '級別', '印刷']):
+                open_number = decoded_result['開數']
+                soft_hard_cover = decoded_result['平/精裝']
+                page_count = decoded_result['頁數']
+                edition = decoded_result['版次']
+                level = decoded_result['級別']
+                custom_print = decoded_result['印刷']
+
+                print(f" 準備  {book_crawler_id} , {open_number} , {soft_hard_cover} , {page_count} , {edition} , {level} , {custom_print}")
+
+                if open_number is not None and page_count not in [None,
+                                                                  0] and soft_hard_cover is not None and edition is not None:
+                    update_book(db, book_crawler_id, open_number, page_count, soft_hard_cover, edition)
+                    print(
+                        f" 成功  {book_crawler_id} , 開數 : {open_number} , 平/精裝 :  {soft_hard_cover} , 頁數 : {page_count} , 版次 : {edition}")
+                else:
+                    print(
+                        f" 失敗@資料有少  {book_crawler_id} , 開數 : {open_number} , 平/精裝 :  {soft_hard_cover} , 頁數 : {page_count} , 版次 : {edition}")
+
+
+                print("--------")
+            else:
+                print(f"遭阻擋*資料 {book_crawler_id}")
+
+        page += 1
+
+
+def update_book(db: Session, book_crawler_id: str, open_number: str, page_count: int, soft_hard_cover: str,
+                edition: str):
+    book = db.query(Book).filter(Book.book_crawler_id == book_crawler_id).first()
+    if book:
+        book.open_number = open_number
+        book.page_count = page_count
+        book.soft_hard_cover = soft_hard_cover
+        book.edition = edition
+        db.commit()
+        db.refresh(book)
+    return book
+
+
+class Book(Base):
+    __tablename__ = 'books'
+
+    book_id = Column(BigInteger, primary_key=True, index=True)
+    book_crawler_id = Column(String(255))
+    open_number = Column(String(255))
+    page_count = Column(Integer, nullable=False)
+    edition = Column(String(255))
+    soft_hard_cover = Column(String(255))
+
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<Book(book_crawler_id={self.book_crawler_id}, open_number='{self.open_number}')>"
+
+
 if __name__ == "__main__":
+    # 透過資料庫更新
+    test_connection()
+    get_db()
+    use_get_all_books()
+
+    # 更新異常資料
     # numbers = [
     #     "0010977211",
     #     "0010977212",
@@ -3808,11 +3946,16 @@ if __name__ == "__main__":
     #     "0010988868",
     #     "0010988881"
     # ]
-    #
-    # # 儲存結果的列表
-    # results = []
-    #
-    # # 對每個數值發送 HTTP 請求
+
+    # numbers =[
+    #     "0010989837",
+    #     "0010988875"
+    # ]
+
+    # 儲存結果的列表
+    results = []
+
+    # 對每個數值發送 HTTP 請求
     # for number in numbers:
     #     # 建立請求的 URL
     #     url = f"https://www.books.com.tw/products/{number}"
@@ -3821,33 +3964,34 @@ if __name__ == "__main__":
     #     print(decoded_result)
     #     # 將解碼的結果添加到列表中
     #     results.append(decoded_result)
-    #
-    # # 將結果寫入到一個 Excel 文件中
+
+    # 將結果寫入到一個 Excel 文件中
     # df = pd.DataFrame(results)
     # df.to_excel("result_add_id.xlsx", index=False)
 
     # 讀取 Excel 文件
-    df = pd.read_excel("result_add_id.xlsx")
 
-    for index, row in df.iterrows():
-        # 檢查 C、D、E 和 G 欄位的值
-        if pd.isna(row['中文書名']) and pd.isna(row['出版社名稱']) and pd.isna(row['出版日期']) and pd.isna(row['定價']):
-            # 重新調用 crawl_book_info 函數
-            url = str(row['網址'])  # Convert url to string
-            book_crawler_id = url.split('/')[-1]
-            # print(url,book_crawler_id)
-            response = crawl_book_info(url, book_crawler_id)
-            if response:
-                print(response)
-                # 更新 DataFrame 的特定列
-                df.at[index, 'ISBN/ISSN'] = response['ISBN/ISSN']
-                df.at[index, '中文書名'] = response['中文書名']
-                df.at[index, '出版社名稱'] = response['出版社名稱']
-                df.at[index, '出版日期'] = response['出版日期']
-                df.at[index, '定價'] = response['定價']
-            else:
-                print(url,row)
-
-
-    # 將更新後的 DataFrame 寫回到 Excel 文件中
-    df.to_excel("result_add_id.xlsx", index=False)
+    # df = pd.read_excel("result_add_id.xlsx")
+    #
+    # for index, row in df.iterrows():
+    #     # 檢查 C、D、E 和 G 欄位的值
+    #     if pd.isna(row['中文書名']) and pd.isna(row['出版社名稱']) and pd.isna(row['出版日期']) and pd.isna(row['定價']):
+    #         # 重新調用 crawl_book_info 函數
+    #         url = str(row['網址'])  # Convert url to string
+    #         book_crawler_id = url.split('/')[-1]
+    #         # print(url,book_crawler_id)
+    #         response = crawl_book_info(url, book_crawler_id)
+    #         if response:
+    #             print(response)
+    #             # 更新 DataFrame 的特定列
+    #             df.at[index, 'ISBN/ISSN'] = response['ISBN/ISSN']
+    #             df.at[index, '中文書名'] = response['中文書名']
+    #             df.at[index, '出版社名稱'] = response['出版社名稱']
+    #             df.at[index, '出版日期'] = response['出版日期']
+    #             df.at[index, '定價'] = response['定價']
+    #         else:
+    #             print(url,row)
+    #
+    #
+    # # 將更新後的 DataFrame 寫回到 Excel 文件中
+    # df.to_excel("result_add_id.xlsx", index=False)

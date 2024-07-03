@@ -200,11 +200,14 @@ def extract_book_info(url, soup):
         'ISBN/ISSN': isbn,
         '定價': price,
         '中國圖書分類號': None,
-        '開數': spec[3] if len(spec) > 3 else None,
         # 'Series': series,
-        '平/精裝': spec[0] if len(spec) > 0 else None,
-        '頁數': spec[1] if len(spec) > 1 else None,
-        '版次': spec[5] if len(spec) > 5 else None,
+        '開數': next((item for item in spec if 'cm' in item), None),
+        '平/精裝': next((item for item in spec if '裝' in item), None),
+        '頁數': next((int(''.join(filter(str.isdigit, item))) for item in spec if
+                      '頁' in item and ''.join(filter(str.isdigit, item)) != ''), 0),
+        '版次': next((item for item in spec if '版' in item), None),
+        '級別': next((item for item in spec if '級' in item), None),
+        '印刷': next((item for item in spec if '刷' in item), None),
         # 'Publish Place': publish_place
         '圖片': img_url,
         '作者簡介': author_intro,
