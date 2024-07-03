@@ -241,8 +241,9 @@ def use_get_all_books():
 
                 print(f" 準備  {book_crawler_id} , {open_number} , {soft_hard_cover} , {page_count} , {edition} , {level} , {custom_print}")
 
-                if open_number is not None and page_count not in [None,
-                                                                  0] and soft_hard_cover is not None and edition is not None:
+                variables = [open_number, soft_hard_cover, page_count, edition, level, custom_print]
+                if len([var for var in variables if var is not None]) >= 3:
+                    # Step 4: Execute the update_book function if condition is met
                     update_book(db, book_crawler_id, open_number, page_count, soft_hard_cover, edition)
                     print(
                         f" 成功  {book_crawler_id} , 開數 : {open_number} , 平/精裝 :  {soft_hard_cover} , 頁數 : {page_count} , 版次 : {edition}")
