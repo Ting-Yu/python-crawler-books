@@ -180,11 +180,21 @@ def extract_book_info(url, soup):
     img_elem = soup.find('img', {'class': 'cover M201106_0_getTakelook_P00a400020052_image_wrap'})
     img_url = img_elem['src'] if img_elem else None
 
-    author_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    author_intro = author_intro_elem.text.strip() if author_intro_elem else None
+    # Finding "內容簡介"
+    content_intro = ''
+    content_intro_heading = soup.find(lambda tag: tag.name == "h3" and "內容簡介" in tag.text)
+    if content_intro_heading and content_intro_heading.find_next_sibling("div"):
+        content_intro = content_intro_heading.find_next_sibling("div").text.strip()
+    # else:
+    #     print("內容簡介 not found or has no following div.")
 
-    content_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    content_intro = content_intro_elem.text.strip() if content_intro_elem else None
+    # Finding "作者介紹"
+    author_intro = ''
+    author_intro_heading = soup.find(lambda tag: tag.name == "h3" and "作者介紹" in tag.text)
+    if author_intro_heading and author_intro_heading.find_next_sibling("div"):
+        author_intro = author_intro_heading.find_next_sibling("div").text.strip()
+    # else:
+    #     print("作者介紹 not found or has no following div.")
 
     return {
         # '網址': url,

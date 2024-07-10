@@ -1,8 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 
-from . import crawler_tools
-from .crawler_tools import timestamp
+import crawler_tools
+from crawler_tools import timestamp
 
 from urllib.parse import urlparse
 import os
@@ -81,6 +81,7 @@ def crawl_book_info(url):
 
         # 解析資料
         book_info = crawler_tools.extract_book_info(url, soup)
+        print(book_info)
         filename = book_info.get('ISBN/ISSN')
         filename = f"output_{filename}.html"
         # 將 soup 寫入檔案
@@ -102,26 +103,26 @@ def is_valid_isbn(isbn: str) -> bool:
 
     return bool(re.match(isbn_10_pattern, isbn) or re.match(isbn_13_pattern, isbn))
 
-# if __name__ == "__main__":
-#
-#     # url = "https://search.books.com.tw/search/query/key/9789865069100"
-#     # url = f"https://search.books.com.tw/search/query/key/{isbn}"
-#
-#     mode = input("Enter 'api' to run as API, or 'local' to run locally: ")
-#     if mode == 'api':
-#         app.run(use_reloader=False)
-#     elif mode == 'local':
-#         url = input("Please enter the URL: ")
-#         if not url:
-#             print("URL is required.")
-#             exit()
-#
-#         monitor = crawler_tools.PerformanceMonitor()
-#         monitor.start()
-#
-#         crawl_search_book_info(url)
-#
-#         monitor.stop()
-#         monitor.report()
-#     else:
-#         print("Invalid mode. Please enter 'api' or 'local'.")
+if __name__ == "__main__":
+
+    url = "https://search.books.com.tw/search/query/key/9786263747937"
+    # url = f"https://search.books.com.tw/search/query/key/{isbn}"
+
+    # mode = input("Enter 'api' to run as API, or 'local' to run locally: ")
+    # if mode == 'api':
+    #     app.run(use_reloader=False)
+    # elif mode == 'local':
+    # url = input("Please enter the URL: ")
+    # if not url:
+    #     print("URL is required.")
+    #     exit()
+
+    monitor = crawler_tools.PerformanceMonitor()
+    monitor.start()
+
+    crawl_search_book_info(url)
+
+    monitor.stop()
+    monitor.report()
+    # else:
+    #     print("Invalid mode. Please enter 'api' or 'local'.")

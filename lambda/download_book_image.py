@@ -10,7 +10,7 @@ import os
 
 import re
 import boto3
-from dobby_storage.storage import FileStorage
+
 
 def lambda_handler(event, context):
     try:
@@ -152,10 +152,7 @@ def crawl_book_info(url):
 
             # print('img_filename', img_filename)
             # s3_url = tools.upload_file_to_s3(img_filename, 'fribooker')
-            # s3_url = upload_file_to_s3(response.raw, 'fribooker', img_filename)
-            file_storage = FileStorage(config_path='dobby_storage/storage.json')
-            s3_url = file_storage.save(response.raw, img_filename, bucket_name='fribooker', use_fileobj=True)
-
+            s3_url = upload_file_to_s3(response.raw, 'fribooker', img_filename)
             return {
                 'filename': filename,
                 'image_directory': img_filename,
@@ -225,11 +222,21 @@ def extract_book_info(url, soup):
     img_elem = soup.find('img', {'class': 'cover M201106_0_getTakelook_P00a400020052_image_wrap'})
     img_url = img_elem['src'] if img_elem else None
 
-    # author_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    # author_intro = author_intro_elem.text.strip() if author_intro_elem else None
+    # # Finding "內容簡介"
+    # content_intro = ''
+    # content_intro_heading = soup.find(lambda tag: tag.name == "h3" and "內容簡介" in tag.text)
+    # if content_intro_heading and content_intro_heading.find_next_sibling("div"):
+    #     content_intro = content_intro_heading.find_next_sibling("div").text.strip()
+    # # else:
+    # #     print("內容簡介 not found or has no following div.")
 
-    # content_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    # content_intro = content_intro_elem.text.strip() if content_intro_elem else None
+    # # Finding "作者介紹"
+    # author_intro = ''
+    # author_intro_heading = soup.find(lambda tag: tag.name == "h3" and "作者介紹" in tag.text)
+    # if author_intro_heading and author_intro_heading.find_next_sibling("div"):
+    #     author_intro = author_intro_heading.find_next_sibling("div").text.strip()
+    # # else:
+    # #     print("作者介紹 not found or has no following div.")
 
     return {
         # # '網址': url,
@@ -245,7 +252,7 @@ def extract_book_info(url, soup):
         'ISBNISSN': isbn,
         # '定價': price,
         # '中國圖書分類號': None,
-        # '開數': spec[3] if len(spec) > 3 else None,
+        # '開數': spec[2] if len(spec) > 2 else None,
         # # 'Series': series,
         # '平/精裝': spec[0] if len(spec) > 0 else None,
         # '頁數': spec[1] if len(spec) > 1 else None,

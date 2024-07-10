@@ -11,10 +11,11 @@ from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, DateTime, BigInteger
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, DateTime, BigInteger, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from decimal import Decimal
 
 
@@ -132,14 +133,22 @@ def extract_book_info(url, soup, number):
     series_elem = soup.find('li', string=lambda x: x and '叢書系列' in x)
     series = series_elem.a.text.strip() if series_elem and hasattr(series_elem, 'a') else None
 
+    # spec_elem = soup.find('li', string=lambda x: x and '規格' in x)
+    # if spec_elem:
+    #     spec = spec_elem.text.strip().split('：')[-1]
+    #     # 使用 '/' 符號進行切割
+    #     spec_parts = spec.split('/')
+    #     spec = [part.strip() for part in spec_parts]
+    # else:
+    #     spec = []
+
     spec_elem = soup.find('li', string=lambda x: x and '規格' in x)
     if spec_elem:
-        spec = spec_elem.text.strip().split('：')[-1]
-        # 使用 '/' 符號進行切割
-        spec_parts = spec.split('/')
-        spec = [part.strip() for part in spec_parts]
+        spec_raw = spec_elem.text.strip().split('：')[-1]  # Extract the spec string after '規格：'
+        spec_parts = spec_raw.split('/')  # Split the spec string into parts using '/'
+        spec = [part.strip() for part in spec_parts if part.strip()]  # Clean and filter empty parts
     else:
-        spec = []
+        spec = []  # Default to an empty list if '規格' is not found
 
     publish_place_elem = soup.find('li', string=lambda x: x and '出版地' in x)
     publish_place = publish_place_elem.text.strip().split('：')[-1] if publish_place_elem else None
@@ -147,11 +156,21 @@ def extract_book_info(url, soup, number):
     img_elem = soup.find('img', {'class': 'cover M201106_0_getTakelook_P00a400020052_image_wrap'})
     img_url = img_elem['src'] if img_elem else None
 
-    author_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    author_intro = author_intro_elem.text.strip() if author_intro_elem else None
+    # Finding "內容簡介"
+    content_intro = None
+    content_intro_heading = soup.find(lambda tag: tag.name == "h3" and "內容簡介" in tag.text)
+    if content_intro_heading and content_intro_heading.find_next_sibling("div"):
+        content_intro = content_intro_heading.find_next_sibling("div").text.strip()
+    # else:
+    #     print("內容簡介 not found or has no following div.")
 
-    content_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    content_intro = content_intro_elem.text.strip() if content_intro_elem else None
+    # Finding "作者介紹"
+    author_intro = None
+    author_intro_heading = soup.find(lambda tag: tag.name == "h3" and "作者介紹" in tag.text)
+    if author_intro_heading and author_intro_heading.find_next_sibling("div"):
+        author_intro = author_intro_heading.find_next_sibling("div").text.strip()
+    # else:
+    #     print("作者介紹 not found or has no following div.")
 
     return {
         'book_crawler_id': number,
@@ -163,10 +182,13 @@ def extract_book_info(url, soup, number):
         '定價': price,
         '開數': next((item for item in spec if 'cm' in item), None),
         '平/精裝': next((item for item in spec if '裝' in item), None),
-        '頁數': next((int(''.join(filter(str.isdigit, item))) for item in spec if '頁' in item and ''.join(filter(str.isdigit, item)) != ''), 0),
+        '頁數': next((int(''.join(filter(str.isdigit, item))) for item in spec if
+                      '頁' in item and ''.join(filter(str.isdigit, item)) != ''), 0),
         '版次': next((item for item in spec if '版' in item), None),
         '級別': next((item for item in spec if '級' in item), None),
         '印刷': next((item for item in spec if '刷' in item), None),
+        '內容簡介': content_intro,
+        '作者簡介': author_intro,
     }
 
 
@@ -206,9 +228,10 @@ def get_db():
 def get_all_books(db: Session, skip: int = 0, limit: int = 30):
     return db.query(Book).filter(
         Book.book_crawler_id.is_not(None),
+        Book.description.not_like('%簡介%'),
         # Book.open_number.is_(None),
         # Book.book_crawler_id > '0010979860',
-        Book.open_number.not_like('%cm%')
+        # Book.author_intro.not_like('%簡介%')
     ).offset(skip).limit(limit).all()
 
 
@@ -225,33 +248,40 @@ def use_get_all_books():
         print(f"Page {page}:")
         for book in books:
             book_crawler_id = book.book_crawler_id
-            time.sleep(0.5)
+            # time.sleep(0.5)
             print(f" Get - {book_crawler_id}: {book.open_number}")
             url = f"https://www.books.com.tw/products/{book_crawler_id}"
             response = crawl_book_info(url, book_crawler_id)
             decoded_result = response
             # print(f"decoded_result {decoded_result} ")
-            if all(key in decoded_result for key in ['開數', '平/精裝', '頁數', '版次', '級別', '印刷']):
+            if all(key in decoded_result for key in
+                   ['開數', '平/精裝', '頁數', '版次', '級別', '印刷', '作者簡介', '內容簡介']):
                 open_number = decoded_result['開數']
                 soft_hard_cover = decoded_result['平/精裝']
                 page_count = decoded_result['頁數']
                 edition = decoded_result['版次']
                 level = decoded_result['級別']
                 custom_print = decoded_result['印刷']
+                description = decoded_result['內容簡介']
+                author_intro = decoded_result['作者簡介']
 
-                print(f" 準備  {book_crawler_id} , {open_number} , {soft_hard_cover} , {page_count} , {edition} , {level} , {custom_print}")
+                print(
+                    f" 準備  {book_crawler_id} , {open_number} , {soft_hard_cover} , {page_count} , {edition} , {level} , {custom_print} , {description}, {author_intro}")
 
-                variables = [open_number, soft_hard_cover, page_count, edition, level, custom_print]
-                if len([var for var in variables if var is not None]) >= 3:
+                variables = [open_number, soft_hard_cover, page_count, edition, level, custom_print, description,
+                             author_intro]
+                if len([var for var in variables if var is not None]) >= 5:
                     # Step 4: Execute the update_book function if condition is met
-                    update_book(db, book_crawler_id, open_number, page_count, soft_hard_cover, edition)
+                    update_book(db, book_crawler_id, open_number, page_count, soft_hard_cover, edition, description,
+                                author_intro)
                     print(
-                        f" 成功  {book_crawler_id} , 開數 : {open_number} , 平/精裝 :  {soft_hard_cover} , 頁數 : {page_count} , 版次 : {edition}")
+                        f" 成功  {book_crawler_id}")
                 else:
                     print(
-                        f" 失敗@資料有少  {book_crawler_id} , 開數 : {open_number} , 平/精裝 :  {soft_hard_cover} , 頁數 : {page_count} , 版次 : {edition}")
+                        f" 失敗@資料有少  {book_crawler_id}")
 
-
+                print("--------")
+                print("--------")
                 print("--------")
             else:
                 print(f"遭阻擋*資料 {book_crawler_id}")
@@ -260,13 +290,15 @@ def use_get_all_books():
 
 
 def update_book(db: Session, book_crawler_id: str, open_number: str, page_count: int, soft_hard_cover: str,
-                edition: str):
+                edition: str, description: str, author_intro: str):
     book = db.query(Book).filter(Book.book_crawler_id == book_crawler_id).first()
     if book:
         book.open_number = open_number
         book.page_count = page_count
         book.soft_hard_cover = soft_hard_cover
         book.edition = edition
+        book.description = description
+        book.author_intro = author_intro
         db.commit()
         db.refresh(book)
     return book
@@ -281,6 +313,8 @@ class Book(Base):
     page_count = Column(Integer, nullable=False)
     edition = Column(String(255))
     soft_hard_cover = Column(String(255))
+    description = Column(Text)
+    author_intro = Column(Text)
 
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

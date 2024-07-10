@@ -4,3 +4,5 @@ __pycache__/*
 /lambda/python/*
 /lambda/python.zip
 /lambda/dobby_storage/__pycache__/*
+app/__pycache__/*
+/venv/*

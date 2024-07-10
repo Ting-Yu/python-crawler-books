@@ -20,6 +20,7 @@ import boto3
 # 考量到正式環境可能會有多個使用者同時使用，因此將 timestamp 設定為固定值
 timestamp = os.environ.get('DownloadPath', "no_set_downloads_path")
 
+
 class Logger:
     def __init__(self, timestamp):
         self.timestamp = timestamp
@@ -43,9 +44,11 @@ class Logger:
         # 將資訊寫入 'url_log.csv' 檔案
         self.log_to_csv(data, 'url_log.csv')
 
+
 def create_directory(dir_name):
     """Create a directory if it does not exist."""
     os.makedirs(dir_name, exist_ok=True)
+
 
 def get_page_content(url):
     # logger = Logger(timestamp)  # Create an instance of Logger
@@ -93,6 +96,7 @@ def get_page_content(url):
         # logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
         return None
 
+
 def download_image(img_url, filename):
     logger = Logger(timestamp)  # Create an instance of Logger
     # 在檔案名稱中添加子目錄
@@ -111,9 +115,9 @@ def download_image(img_url, filename):
             # logger.log_url(img_url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
             return filename
         # else:
-            # Record failure
-            # logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
-            # logger.log_url(img_url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        # Record failure
+        # logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
+        # logger.log_url(img_url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code
         # print(f"HTTP error for {img_url} occurred with status code {status_code}: {e}")
@@ -126,10 +130,12 @@ def download_image(img_url, filename):
         # logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
         #                   f'image_failed-{logger.timestamp}.csv')
         # logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+
 # def write_soup_to_file(soup, filename):
-    # logger = Logger(timestamp)  # Create an instance of Logger
-    # filename = os.path.join(logger.timestamp, 'htmls', filename)
-    # logger.write_to_file(str(soup.prettify()), filename)
+#     logger = Logger(timestamp)  # Create an instance of Logger
+#     filename = os.path.join(logger.timestamp, 'htmls', filename)
+#     logger.write_to_file(str(soup.prettify()), filename)
+
 
 def extract_book_info(url, soup):
     category_elems = soup.find_all('li', {'property': 'itemListElement'})
@@ -182,12 +188,19 @@ def extract_book_info(url, soup):
     img_elem = soup.find('img', {'class': 'cover M201106_0_getTakelook_P00a400020052_image_wrap'})
     img_url = img_elem['src'] if img_elem else None
 
-    author_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    author_intro = author_intro_elem.text.strip() if author_intro_elem else None
+    # Finding "內容簡介"
+    content_intro = ''
+    content_intro_heading = soup.find(lambda tag: tag.name == "h3" and "內容簡介" in tag.text)
+    if content_intro_heading:
+        content_intro = content_intro_heading.find_next_sibling("div")
+    print("內容簡介:", content_intro)
 
-    content_intro_elem = soup.find('div', {'class': 'content', 'style': 'height:auto;'})
-    content_intro = content_intro_elem.text.strip() if content_intro_elem else None
-
+    # Finding "作者介紹"
+    author_intro = ''
+    author_intro_heading = soup.find(lambda tag: tag.name == "h3" and "作者介紹" in tag.text)
+    if author_intro_heading:
+        author_intro = author_intro_heading.find_next_sibling("div")
+    print("作者介紹:", author_intro)
     return {
         # '網址': url,
         '商品類別': category_name,
@@ -219,6 +232,7 @@ def extract_book_info(url, soup):
         '重要事件': None
     }
 
+
 def export_excel(book_data):
     # 產生 Excel 檔案名稱
     excel_filename = f"book_info_{timestamp}.xlsx"
@@ -232,6 +246,7 @@ def export_excel(book_data):
     # df.to_excel(filename, index=False)
 
     print(f"The number of Books is {len(book_data)}")
+
 
 def upload_file_to_s3(file_path, bucket, object_name=None):
     # 如果沒有指定 object_name，則使用檔案名稱
