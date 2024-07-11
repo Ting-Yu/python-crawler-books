@@ -2,6 +2,7 @@
 __pycache__/*
 app/__pycache__/*
 app/recheck/__pycache__/*
+app/recheck/models/__pycache__/*
 .env
 /lambda/python/*
 /lambda/python.zip

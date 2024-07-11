@@ -17,3 +17,4 @@ class Publisher(sqlalchemy_config.Base):
     is_hidden = Column(Boolean, nullable=False, default=False, comment='是否隱藏')
 
     books = relationship("Book", back_populates="publisher")
+    purchase_items = relationship("PurchaseItem", back_populates="publisher")

@@ -21,4 +21,4 @@ class OrderItem(sqlalchemy_config.Base):
 
     order = relationship("Order", back_populates="order_items")
     book = relationship("Book", back_populates="order_items")
-    purchase_item = relationship("PurchaseItem", back_populates="order_items")
+    purchase_item = relationship("PurchaseItem", back_populates="order_item")

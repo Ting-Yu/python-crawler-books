@@ -16,3 +16,11 @@ class Purchase(sqlalchemy_config.Base):
 
     supplier = relationship("Supplier", back_populates="purchases")
     member = relationship("Member", back_populates="purchases")
+    purchase_items = relationship("PurchaseItem", back_populates="purchase")
+
+
+def get_all_purchases(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
+    query = db.query(Purchase)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return query.offset(skip).limit(limit).all()

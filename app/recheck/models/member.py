@@ -36,3 +36,4 @@ class Member(sqlalchemy_config.Base):
     updated_at = Column(DateTime, nullable=True)
 
     orders = relationship("Order", back_populates="member")
+    purchases = relationship("Purchase", back_populates="member")

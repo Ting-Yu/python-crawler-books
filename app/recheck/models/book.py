@@ -45,6 +45,8 @@ class Book(sqlalchemy_config.Base):
     publisher_name = Column(String(255), nullable=True)
 
     publisher = relationship("Publisher", back_populates="books")
+    order_items = relationship("OrderItem", back_populates="book")
+    purchase_items = relationship("PurchaseItem", back_populates="book")
 
 
 def get_all_books(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):

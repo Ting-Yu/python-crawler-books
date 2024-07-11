@@ -23,3 +23,5 @@ class PurchaseItem(sqlalchemy_config.Base):
     purchase = relationship("Purchase", back_populates="purchase_items")
     publisher = relationship("Publisher", back_populates="purchase_items")
     book = relationship("Book", back_populates="purchase_items")
+    order_item = relationship("OrderItem", back_populates="purchase_item")
+
