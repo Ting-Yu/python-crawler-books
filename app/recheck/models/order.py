@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, BigInteger, Integer, Text, DateTime, Fore
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import sqlalchemy_config
+from sqlalchemy_pagination import paginate
 
 class Order(sqlalchemy_config.Base):
     __tablename__ = 'orders'
@@ -18,3 +19,9 @@ class Order(sqlalchemy_config.Base):
 
     member = relationship("Member", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order")
+
+def get_paginated_orders(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Order)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)

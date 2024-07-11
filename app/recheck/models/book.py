@@ -63,3 +63,9 @@ def get_all_books(db: sqlalchemy_config.Session, filters: list, skip: int = 0, l
     # ]
     #
     # books = get_all_books(db, filters)
+
+def get_book_by_id(db: sqlalchemy_config.Session, book_id: int):
+    return db.query(Book).filter(Book.book_id == book_id).first()
+
+def get_book_by_ids(db: sqlalchemy_config.Session, book_ids: list):
+    return db.query(Book).filter(Book.book_id.in_(book_ids)).all()

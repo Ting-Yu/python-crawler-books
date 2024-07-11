@@ -6,3 +6,5 @@ from .order import Order
 from .order_item import OrderItem
 from .purchase import Purchase
 from .purchase_item import PurchaseItem
+from sqlalchemy.orm import configure_mappers
+configure_mappers()

@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, BigInteger, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import sqlalchemy_config
+from sqlalchemy_pagination import paginate
 
 class Purchase(sqlalchemy_config.Base):
     __tablename__ = 'purchases'
@@ -19,8 +20,8 @@ class Purchase(sqlalchemy_config.Base):
     purchase_items = relationship("PurchaseItem", back_populates="purchase")
 
 
-def get_all_purchases(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
+def get_paginated_purchases(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Purchase)
     for filter_condition in filters:
         query = query.filter(filter_condition)
-    return query.offset(skip).limit(limit).all()
+    return paginate(query, page, page_size)
