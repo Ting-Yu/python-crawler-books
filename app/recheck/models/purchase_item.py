@@ -2,6 +2,8 @@ from sqlalchemy import Column, String, BigInteger, Integer, Text, DateTime, Fore
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import sqlalchemy_config
+from pprint import pformat
+
 
 class PurchaseItem(sqlalchemy_config.Base):
     __tablename__ = 'purchase_items'
@@ -25,3 +27,17 @@ class PurchaseItem(sqlalchemy_config.Base):
     book = relationship("Book", back_populates="purchase_items")
     order_item = relationship("OrderItem", back_populates="purchase_item")
 
+
+def update_purchase_item_by_id(db: sqlalchemy_config.Session, purchase_item_id: int, updates: dict):
+    purchase_item = db.query(PurchaseItem).filter(PurchaseItem.id == purchase_item_id).first()
+    # print(f"*** Update Purchase Item: {purchase_item_id}")
+    if purchase_item:
+        for key, value in updates.items():
+            print(f"*** Update Purchase Item: {key} = {value}")
+            if hasattr(purchase_item, key):
+                setattr(purchase_item, key, value)
+        # purchase_item_dict = vars(purchase_item)
+        # print(f"*** Set Purchase Item: {pformat(purchase_item_dict)}")
+        db.commit()
+        db.refresh(purchase_item)
+    return purchase_item

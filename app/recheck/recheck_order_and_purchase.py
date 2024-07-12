@@ -9,6 +9,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 import numpy as np
+from pprint import pformat
 
 def real_round(num, decimal=0):
     num = float(num)  # Convert to float
@@ -21,29 +22,47 @@ def export_orders_to_excel(order, books):
     global row_num
 
     # for order in orders:
-    sheet[f"A{row_num}"] = order.order_id
-    sheet[f"B{row_num}"] = order.total_price
+    order_id = order.order_id
+    total_price = order.total_price
+    current_total_price = 0
+    order_row_num = row_num
+    sheet[f"A{order_row_num}"] = order_id
+    sheet[f"B{order_row_num}"] = total_price
     row_num += 1
     for item in order.order_items:
+        order_item_id = item.id
         book = books.get(item.book_id)
-        current_price = real_round(book.price * book.sale_discount,0)
+        price = book.price
+        sale_discount = book.sale_discount
+        current_price = real_round(price * sale_discount,0)
+        current_total_price += current_price
         # print(
-        #     f" Current Price: {current_price}, Book Price: {book.price}, Book Sale Discount: {book.sale_discount}")
+        #     f" Current Price: {current_price}, Book Price: {price}, Book Sale Discount: {book.sale_discount}")
 
-        sheet[f"B{row_num}"] = item.id
+        sheet[f"B{row_num}"] = order_item_id
         sheet[f"C{row_num}"] = item.book_id
         sheet[f"D{row_num}"] = item.price
         sheet[f"E{row_num}"] = item.sale_discount
         sheet[f"F{row_num}"] = current_price
-        sheet[f"G{row_num}"] = book.price
-        sheet[f"H{row_num}"] = book.sale_discount
+        sheet[f"G{row_num}"] = price
+        sheet[f"H{row_num}"] = sale_discount
 
         # Apply yellow fill if item.price is not equal to current_price
-        if item.price != current_price:
+        if item.price != current_price or item.sale_discount != sale_discount:
             for col in range(2, 9):  # Columns B to H
                 sheet[f"{get_column_letter(col)}{row_num}"].fill = yellow_fill
 
+
+            db = sqlalchemy_config.get_db()
+            order_item_model.update_order_item_by_id(db, order_item_id,
+                                                           {"price":current_price, "sale_discount": sale_discount})
+
         row_num += 1
+
+    sheet[f"C{order_row_num}"] = current_total_price
+    db = sqlalchemy_config.get_db()
+    order_model.update_order_by_id(db, order_id,
+                                             {"total_price": current_total_price})
 
 
 def export_purchases_to_excel(purchase, books):
@@ -58,6 +77,9 @@ def export_purchases_to_excel(purchase, books):
         # print(
         #     f" Current Price: {current_price}, Book Price: {book.price}, Book Sale Discount: {book.sale_discount}")
 
+        purchase_item_id = item.id
+        purchase_discount = book.purchase_discount
+
         sheet[f"B{row_num}"] = item.id
         sheet[f"C{row_num}"] = item.book_id
         sheet[f"D{row_num}"] = item.price
@@ -66,42 +88,19 @@ def export_purchases_to_excel(purchase, books):
         sheet[f"G{row_num}"] = current_price
         sheet[f"H{row_num}"] = book.price
         sheet[f"I{row_num}"] = book.sale_discount
-        sheet[f"J{row_num}"] = book.purchase_discount
+        sheet[f"J{row_num}"] = purchase_discount
 
         # Apply yellow fill if item.price is not equal to current_price
         if item.price != current_price or item.purchase_discount != book.purchase_discount:
             for col in range(2, 11):  # Columns B to J
                 sheet[f"{get_column_letter(col)}{row_num}"].fill = yellow_fill
 
+            db = sqlalchemy_config.get_db()
+            purchase_item_model.update_purchase_item_by_id(db, purchase_item_id,
+                                                           {"price":current_price, "purchase_discount": purchase_discount})
+
+
         row_num += 1
-
-
-def use_get_all_books():
-    db = sqlalchemy_config.get_db()
-    # print(f"DB: {db}")
-
-    page = 1
-    page_size = 50
-    while True:
-
-        purchases = purchase_model.get_all_purchases(db, [], skip=(page - 1) * page_size, limit=page_size)
-
-        for purchase in purchases:
-            purchase_id = purchase.purchase_id
-            print(f"Purchase ID: {purchase_id}")
-            for item in purchase.purchase_items:
-                print(f"  Purchase Item ID: {item.id}, Book ID: {item.book_id}, Amount: {item.amount}")
-
-        books = book_model.get_all_books(db, [], skip=(page - 1) * page_size, limit=page_size)
-        if not books:
-            break
-
-        print(f"Page {page}:")
-        for book in books:
-            book_crawler_id = book.book_id
-            print(f"Book Crawler ID: {book_crawler_id}")
-
-        # page += 1
 
 
 def use_get_all_orders():
@@ -187,8 +186,10 @@ def use_get_all_purchases():
                 if book:
                     current_price = book.price
                     if item.price != current_price or item.purchase_discount != book.purchase_discount:
+                        # purchase_item_dict = vars(item)
+                        # print(f"*** Purchase Item: {pformat(purchase_item_dict)}")
                         print(
-                            f"  Purchase Item ID: {item.book_id}, Book ID: {item.book_id}, "
+                            f"  Purchase Item ID: {item.id}, Book ID: {item.book_id}, "
                             f"Item Price: {item.price}, Current Price: {current_price}, Book Price: {book.price}, "
                             f"Item Purchase Discount: {item.purchase_discount}, Book Purchase Discount: {book.purchase_discount}"
                         )
