@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -5,11 +6,13 @@ from sqlalchemy.orm import Session
 
 # 資料庫連接設定
 DB_CONNECTION = ''
-DB_HOST = ''
-DB_PORT = ''
-DB_DATABASE = ''
-DB_USERNAME = ''
-DB_PASSWORD = ''
+DB_HOST = os.environ.get('FRIBOOKER_DB_HOST')
+DB_PORT = os.environ.get('FRIBOOKER_DB_PORT')
+DB_DATABASE = os.environ.get('FRIBOOKER_DB_DATABASE')
+DB_USERNAME = os.environ.get('FRIBOOKER_DB_USERNAME')
+DB_PASSWORD = os.environ.get('FRIBOOKER_DB_PASSWORD')
+
+# print(f"DB_HOST: {DB_HOST}", f"DB_PORT: {DB_PORT}", f"DB_DATABASE: {DB_DATABASE}", f"DB_USERNAME: {DB_USERNAME}", f"DB_PASSWORD: {DB_PASSWORD}")
 
 # 建立資料庫連線
 engine = create_engine(f'mysql+mysqlconnector://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_DATABASE}')
