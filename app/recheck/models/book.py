@@ -104,6 +104,10 @@ def upsert_book(db: sqlalchemy_config.Session, book_data: dict):
         db.rollback()
         print(f"An error occurred: {e}")
         return None, None
+    except Exception as e:
+        # Rollback in case of error
+        db.rollback()
+        raise e
 
 
 def update_book_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates: dict):
