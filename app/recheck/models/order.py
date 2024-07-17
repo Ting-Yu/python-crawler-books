@@ -30,10 +30,10 @@ def get_paginated_orders(db: sqlalchemy_config.Session, filters: list, page=1, p
 
 def update_order_by_id(db: sqlalchemy_config.Session, order_id: int, updates: dict):
     order = db.query(Order).filter(Order.order_id == order_id).first()
-    print(f"*** Update Order: {order_id}")
+    # print(f"*** Update Order: {order_id}")
     if order:
         for key, value in updates.items():
-            print(f"*** Update Order Item: {key} = {value}")
+            # print(f"*** Update Order Item: {key} = {value}")
             if hasattr(order, key):
                 setattr(order, key, value)
         # order_dict = vars(order)

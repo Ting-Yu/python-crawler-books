@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, BigInteger, Date, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from . import sqlalchemy_config
+from sqlalchemy_pagination import paginate
 
 class Shipping(sqlalchemy_config.Base):
     __tablename__ = 'shippings'
@@ -30,3 +31,19 @@ class Shipping(sqlalchemy_config.Base):
     creator = relationship("Member", foreign_keys=[created_by])
 
     shipping_items = relationship("ShippingItem", back_populates="shipping")
+
+def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Shipping)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)
+
+def update_shipping_by_id(db: sqlalchemy_config.Session, shipping_id: int, updates: dict):
+    shipping = db.query(Shipping).filter(Shipping.shipping_id == shipping_id).first()
+    if shipping:
+        for key, value in updates.items():
+            if hasattr(shipping, key):
+                setattr(shipping, key, value)
+        db.commit()
+        db.refresh(shipping)
+    return shipping

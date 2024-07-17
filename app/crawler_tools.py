@@ -20,6 +20,7 @@ import boto3
 # 考量到正式環境可能會有多個使用者同時使用，因此將 timestamp 設定為固定值
 timestamp = os.environ.get('DownloadPath', "no_set_downloads_path")
 
+
 class Logger:
     def __init__(self, timestamp):
         self.timestamp = timestamp
@@ -42,11 +43,13 @@ class Logger:
         # 將資訊寫入 'url_log.csv' 檔案
         self.log_to_csv(data, 'url_log.csv')
 
+
 def create_directory(dir_name):
     """Create a directory if it does not exist."""
     os.makedirs(dir_name, exist_ok=True)
 
-def get_page_content(url):
+
+def get_page_content(url, createLog=False):
     logger = Logger(timestamp)  # Create an instance of Logger
     try:
         headers = {
@@ -59,37 +62,44 @@ def get_page_content(url):
             # Check if the page contains the error message
             if "瀏覽方式錯誤" in soup.text or "Please check your ip address" in soup.text:
                 print(f"Access blocked when attempting to get content from {url}")
-                logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Access blocked'},
-                                  f'url_failed-{logger.timestamp}.csv')
-                logger.log_url(url, False, response.status_code, 'Access blocked')  # 記錄失敗的 URL 和 HTTP 狀態碼
+                if createLog:
+                    logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Access blocked'},
+                                      f'url_failed-{logger.timestamp}.csv')
+                    logger.log_url(url, False, response.status_code, 'Access blocked')  # 記錄失敗的 URL 和 HTTP 狀態碼
                 return None
             print(f"Successfully got content from {url}")
             time.sleep(random.randint(2, 5))  # pause for 2 to 5 seconds
             # Record success
-            logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Success'}, f'url_success-{logger.timestamp}.csv')
-            logger.log_url(url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
+            if createLog:
+                logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Success'},
+                                  f'url_success-{logger.timestamp}.csv')
+                logger.log_url(url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
             return soup
         else:
             print(f"Failed to get content from {url}")
             # Record failure
-            logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Failed'}, f'url_failed-{logger.timestamp}.csv')
-            logger.log_url(url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+            if createLog:
+                logger.log_to_csv({'url': url, 'http_code': response.status_code, 'message': 'Failed'},
+                                  f'url_failed-{logger.timestamp}.csv')
+                logger.log_url(url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
             return None
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code
         print(f"HTTP error for {url} occurred with status code {status_code}: {e}")
-
-        logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
-                          f'url_failed-{logger.timestamp}.csv')
-        logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        if createLog:
+            logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
+                              f'url_failed-{logger.timestamp}.csv')
+            logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
         return None
     except requests.exceptions.RequestException as e:
         status_code = e.response.status_code
         print(f"Request error for {url}: {e}")
-        logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
-                          f'url_failed-{logger.timestamp}.csv')
-        logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+        if createLog:
+            logger.log_to_csv({'url': url, 'http_code': 'N/A', 'message': str(e)},
+                              f'url_failed-{logger.timestamp}.csv')
+            logger.log_url(url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
         return None
+
 
 def download_image(img_url, filename):
     logger = Logger(timestamp)  # Create an instance of Logger
@@ -105,12 +115,14 @@ def download_image(img_url, filename):
                 for chunk in response.iter_content(1024):
                     file.write(chunk)
             # Record success
-            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Success'}, f'image_success-{logger.timestamp}.csv')
+            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Success'},
+                              f'image_success-{logger.timestamp}.csv')
             logger.log_url(img_url, True, response.status_code, 'Success')  # 記錄成功的 URL 和 HTTP 狀態碼
             return filename
         else:
             # Record failure
-            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'}, f'image_failed-{logger.timestamp}.csv')
+            logger.log_to_csv({'url': img_url, 'http_code': response.status_code, 'message': 'Failed'},
+                              f'image_failed-{logger.timestamp}.csv')
             logger.log_url(img_url, False, response.status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code
@@ -124,10 +136,13 @@ def download_image(img_url, filename):
         logger.log_to_csv({'url': img_url, 'http_code': 'N/A', 'message': str(e)},
                           f'image_failed-{logger.timestamp}.csv')
         logger.log_url(img_url, False, status_code, 'Failed')  # 記錄失敗的 URL 和 HTTP 狀態碼
+
+
 def write_soup_to_file(soup, filename):
     logger = Logger(timestamp)  # Create an instance of Logger
     filename = os.path.join(logger.timestamp, 'htmls', filename)
     logger.write_to_file(str(soup.prettify()), filename)
+
 
 def extract_book_info(url, soup):
     category_elems = soup.find_all('li', {'property': 'itemListElement'})
@@ -197,7 +212,7 @@ def extract_book_info(url, soup):
     #     print("作者介紹 not found or has no following div.")
 
     return {
-        # '網址': url,
+        '網址': url,
         '商品類別': category_name,
         '中文書名': title,
         '原文書名': None,
@@ -227,6 +242,7 @@ def extract_book_info(url, soup):
         '重要事件': None
     }
 
+
 def export_excel(book_data):
     # 產生 Excel 檔案名稱
     excel_filename = f"book_info_{timestamp}.xlsx"
@@ -240,6 +256,7 @@ def export_excel(book_data):
     df.to_excel(filename, index=False)
 
     print(f"The number of Books is {len(book_data)}")
+
 
 def upload_file_to_s3(file_path, bucket, object_name=None):
     # 如果沒有指定 object_name，則使用檔案名稱
@@ -270,6 +287,7 @@ def upload_file_to_s3(file_path, bucket, object_name=None):
     file_url = f"https://{bucket}.s3.amazonaws.com/{object_name}"
 
     return file_url
+
 
 class PerformanceMonitor:
     def __init__(self):
@@ -303,3 +321,59 @@ class PerformanceMonitor:
 
         print(f"The program took {execution_time} to complete.")
         print(f"The loop used {memory_usage} of memory.")
+
+
+def map_publisher_name(old_name):
+    # Mapping of old publisher names to new publisher names
+    publisher_name_map = {
+        "大溏": "大溏文化",
+        "木馬文化": "木馬",
+        "時報出版": "時報文化",
+        "大石國際文化": "大石",
+        "衛城出版": "衛城",
+        "書林出版有限公司": "書林出版",
+        "尖端": "尖端(漫畫拆封不退)",
+        "好讀": "好讀出版",
+        "澄波藝術文化股份有限公司": "澄波藝術文化有限公司",
+        "國立中央大學": "國立中央大學臺經中心",
+        "青文": "青文(漫畫拆封不退)",
+        "PCuSER電腦人文化": "PCUSER電腦人",
+        "水牛": "水牛(集單較久)",
+        "晨星": "晨星出版",
+        "楓樹林出版社": "楓樹林",
+        "春天出版社": "春天",
+        "新經典文化": "新經典",
+        "太雅出版社": "太雅出版",
+        "原動力文化": "原動力",
+        "東立": "東立（拆封不退）",
+        "柏樂出版有限公司": "柏樂出版",
+        "台灣角川": "角川(漫畫拆封不退)",
+        "高寶": "高寶國際",
+        "初文出版社有限公司": "初文出版社",
+        "三采": "三采文化",
+        "三民": "三民書局",
+        "如果出版社": "如果出版",
+        "健行": "健行文化",
+        "大田": "大田出版",
+        "香港kubrick": "KUBRICK",
+        "蓋亞": "蓋亞文化",
+        "方舟文化": "方舟",
+        "農業部林業及自然保育署": "農業部林業及自然保育署（直往，買斷）",
+        "奧林": "奧林文化",
+        "主流出版社": "主流出版",
+        "奇異果文創事業有限公司": "奇異果文創",
+        "奇光出版": "奇光",
+        "朱雀": "朱雀文化",
+        "網路與書出版": "網路與書",
+        "風和文創": "風和文創事業有限公司",
+        "深智數位": "深智數位股份有限公司",
+        "維京": "維京國際",
+        "台北市政府文化局": "台北市政府文化局【買斷不退】",
+        "國立陽明交通大學出版社": "陽明交通大學出版社",
+        "天空數位圖書": "天空數位"
+    }
+
+    if old_name in publisher_name_map:
+        return publisher_name_map[old_name]
+    else:
+        return old_name

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, Text, DateTime, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from . import sqlalchemy_config
+from sqlalchemy_pagination import paginate
 
 class Publisher(sqlalchemy_config.Base):
     __tablename__ = 'publishers'
@@ -18,3 +19,23 @@ class Publisher(sqlalchemy_config.Base):
 
     books = relationship("Book", back_populates="publisher")
     purchase_items = relationship("PurchaseItem", back_populates="publisher")
+
+def get_all_publishers(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
+    query = db.query(Publisher)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return query.offset(skip).limit(limit).all()
+def get_paginated_orders(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Publisher)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)
+
+def get_publisher_by_name(db: sqlalchemy_config.Session, name: str):
+    return db.query(Publisher).filter(Publisher.name == name).first()
+
+def create_publisher(db: sqlalchemy_config.Session, publisher: Publisher):
+    db.add(publisher)
+    db.commit()
+    return publisher
+

@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import sqlalchemy_config
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy_pagination import paginate
 
 class Book(sqlalchemy_config.Base):
     __tablename__ = 'books'
@@ -70,3 +72,46 @@ def get_book_by_id(db: sqlalchemy_config.Session, book_id: int):
 
 def get_book_by_ids(db: sqlalchemy_config.Session, book_ids: list):
     return db.query(Book).filter(Book.book_id.in_(book_ids)).all()
+def get_book_by_isbns(db: sqlalchemy_config.Session, isbns: list):
+    return db.query(Book).filter(Book.isbn.in_(isbns)).all()
+def get_book_by_isbn(db: sqlalchemy_config.Session, isbn: str):
+    return db.query(Book).filter(Book.isbn == isbn).first()
+
+def get_paginated_books(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Book)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)
+
+def upsert_book(db: sqlalchemy_config.Session, book_data: dict):
+    try:
+        # Check if the book already exists based on ISBN
+        existing_book = db.query(Book).filter(Book.isbn == book_data.get('isbn')).first()
+
+        if existing_book:
+            # Update existing book
+            # for key, value in book_data.items():
+            #     setattr(existing_book, key, value)
+            # db.commit()
+            return existing_book, False  # Return the book and False indicating it was updated
+        else:
+            # Create new book
+            new_book = Book(**book_data)
+            db.add(new_book)
+            db.commit()
+            return new_book, True  # Return the book and True indicating it was created
+    except SQLAlchemyError as e:
+        db.rollback()
+        print(f"An error occurred: {e}")
+        return None, None
+
+
+def update_book_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates: dict):
+    book = db.query(Book).filter(Book.book_id == book_id).first()
+    if book:
+        for key, value in updates.items():
+            if hasattr(book, key):
+                setattr(book, key, value)
+        db.commit()
+        db.refresh(book)
+    return book

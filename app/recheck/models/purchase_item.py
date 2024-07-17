@@ -33,7 +33,7 @@ def update_purchase_item_by_id(db: sqlalchemy_config.Session, purchase_item_id: 
     # print(f"*** Update Purchase Item: {purchase_item_id}")
     if purchase_item:
         for key, value in updates.items():
-            print(f"*** Update Purchase Item: {key} = {value}")
+            # print(f"*** Update Purchase Item: {key} = {value}")
             if hasattr(purchase_item, key):
                 setattr(purchase_item, key, value)
         # purchase_item_dict = vars(purchase_item)

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, Text, Date, DateTime, Boolean, Integer
 from sqlalchemy.orm import relationship
 from . import sqlalchemy_config
+from sqlalchemy.dialects import postgresql
 
 class Member(sqlalchemy_config.Base):
     __tablename__ = 'members'
@@ -37,3 +38,16 @@ class Member(sqlalchemy_config.Base):
 
     orders = relationship("Order", back_populates="member")
     purchases = relationship("Purchase", back_populates="member")
+
+def get_member_by_name(db: sqlalchemy_config.Session, member_name: str):
+    print(f"*** get_member_by_name: {member_name}")
+    return db.query(Member).filter(Member.name == member_name).first()
+
+def get_member_by_id(db: sqlalchemy_config.Session, member_id: int):
+    return db.query(Member).filter(Member.id == member_id).first()
+
+def get_member_by_ids(db: sqlalchemy_config.Session, members_id: list):
+    return db.query(Member).filter(Member.id.in_(members_id)).all()
+
+def get_members_all(db: sqlalchemy_config.Session):
+    return db.query(Member).all()
