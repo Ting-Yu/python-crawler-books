@@ -4,6 +4,8 @@ from sqlalchemy.sql import func
 from . import sqlalchemy_config
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy_pagination import paginate
+from sqlalchemy.orm import sessionmaker
+
 
 class Book(sqlalchemy_config.Base):
     __tablename__ = 'books'
@@ -67,21 +69,29 @@ def get_all_books(db: sqlalchemy_config.Session, filters: list, skip: int = 0, l
     #
     # books = get_all_books(db, filters)
 
+
 def get_book_by_id(db: sqlalchemy_config.Session, book_id: int):
     return db.query(Book).filter(Book.book_id == book_id).first()
 
+
 def get_book_by_ids(db: sqlalchemy_config.Session, book_ids: list):
     return db.query(Book).filter(Book.book_id.in_(book_ids)).all()
+
+
 def get_book_by_isbns(db: sqlalchemy_config.Session, isbns: list):
     return db.query(Book).filter(Book.isbn.in_(isbns)).all()
+
+
 def get_book_by_isbn(db: sqlalchemy_config.Session, isbn: str):
     return db.query(Book).filter(Book.isbn == isbn).first()
+
 
 def get_paginated_books(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Book)
     for filter_condition in filters:
         query = query.filter(filter_condition)
     return paginate(query, page, page_size)
+
 
 def upsert_book(db: sqlalchemy_config.Session, book_data: dict):
     try:
@@ -119,3 +129,20 @@ def update_book_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates:
         db.commit()
         db.refresh(book)
     return book
+
+
+# Create a sessionmaker, bind it to your engine
+Session = sessionmaker(bind=sqlalchemy_config.engine)
+
+
+def bulk_insert_books(upsert_data_list):
+    session = Session()  # Create a new session that is bound to the engine
+    try:
+        session.bulk_insert_mappings(Book, upsert_data_list)
+        session.commit()  # Commit the transaction
+        print("Batch insert successful.")
+    except Exception as e:
+        session.rollback()  # Rollback in case of error
+        print(f"An error occurred during batch insert: {e}")
+    finally:
+        session.close()  # Ensure the session is closed after operation

@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import pandas as pd
 
+
 def replace_nan_with_none(book_data):
     """
     Replace any nan values in the book_data dictionary with None.
@@ -15,6 +16,7 @@ def replace_nan_with_none(book_data):
         if pd.isna(value):
             book_data[key] = None
     return book_data
+
 
 def save_upsert_data_to_csv(upsert_data_list, file_number):
     if upsert_data_list:
@@ -33,6 +35,22 @@ def save_upsert_data_to_csv(upsert_data_list, file_number):
         result_df.to_csv(csv_file_name, index=False, columns=column_order)
         print(f"Data saved to {csv_file_name}")
 
+
+def handle_success(book_result):
+    print(f"@@@ Success Book ...book id: {book_result.book_id} , Status: True @@@")
+
+
+def handle_error(book_id, isbn, title, status, book_result):
+    error_message = getattr(book_result, 'message', 'No error message available')
+    # print(f"{book_result}")
+    # input("Press Enter to continue...")
+    print(f"************")
+    print(f"*** Error Book ...book id : {book_id} , isbn : {isbn} , title : {title} , Status: {status}  ***")
+    print(f" Error Message : {error_message}")
+    print(f"************")
+    # input("*** Error Book ...")
+
+
 def recheck_book():
     db = sqlalchemy_config.get_db()
 
@@ -42,7 +60,7 @@ def recheck_book():
 
     # Specify the path to your Excel file
     for file_number in range(0, 56):
-        excel_file_path = 'compare_excel/書目資料_table'+str(file_number)+'.xlsx'
+        excel_file_path = 'compare_excel/書目資料_table' + str(file_number) + '.xlsx'
         print(f"*** Excel File Path: {excel_file_path}")
 
         # Read the Excel file
@@ -72,12 +90,12 @@ def recheck_book():
 
         # Find missing book_ids by performing a set difference
         missing_book_ids = df_book_ids - database_book_ids
-        if(len(missing_book_ids) > 0):
+        if (len(missing_book_ids) > 0):
             print("Missing Book IDs:", missing_book_ids)
             # input("Press Enter to continue...")
 
         if len(missing_book_ids) > 0:
-            upsert_data_list=[]
+            upsert_data_list = []
             filtered_df = df.loc[df['book_id'].isin(missing_book_ids)]
             # Display the first few rows of the dataframe
             # print(df.head())
@@ -87,6 +105,8 @@ def recheck_book():
                 # print(f"*** Row {index}")
                 book_id = row['book_id']
                 isbn = row['isbn']
+                if pd.isnull(isbn) or isbn == '':
+                    isbn = None
                 title = row['書名']
                 publisher_name = row['出版社']
                 publisher_id = 9999
@@ -96,6 +116,8 @@ def recheck_book():
                 if pd.isnull(published_at):
                     published_at = None
                 author = row['作者']
+                if pd.isnull(author) or author == '':
+                    author = ''
                 translator = row['翻譯']
                 price = row['定價']
                 if pd.isnull(price):
@@ -151,17 +173,43 @@ def recheck_book():
                     'limit_count': 0,
                 }
                 upsert_data = replace_nan_with_none(upsert_data)
-                print(upsert_data)
+                # print(upsert_data)
                 upsert_data_list.append(upsert_data)
 
-                book_result = book_model.upsert_book(db, upsert_data)
-                print(f"*** Book Result: {book_result}")
-                # input("Press Enter to continue...")
+                [book_result, status] = book_model.upsert_book(db, upsert_data)
+                if status:
+                    handle_success(book_result)
+                else:
+                    handle_error(book_id, isbn, title, status, book_result)
 
-            save_upsert_data_to_csv(upsert_data_list, file_number)
+            if len(upsert_data_list) > 0:
+                # batch_insert_with_chunks(upsert_data_list, 100)
+                save_upsert_data_to_csv(upsert_data_list, file_number)
             # input("Press Enter to continue...")
 
     db.close()
+
+
+def chunked_list(input_list, chunk_size):
+    """Yield successive chunk_size chunks from input_list."""
+    for i in range(0, len(input_list), chunk_size):
+        yield input_list[i:i + chunk_size]
+
+
+def batch_insert_with_chunks(upsert_data_list, chunk_size=50):
+    """Insert data in chunks."""
+    for chunk in chunked_list(upsert_data_list, chunk_size):
+        try:
+            print(f"Inserting chunk of {len(chunk)} records")
+            print(f"Chunk All Book Ids: {', '.join(str(book['book_id']) for book in chunk)}")
+            # input("chunk Press Enter to continue...")
+            # Assuming bulk_insert_books is a function that handles the insertion logic
+            book_model.bulk_insert_books(chunk)
+            # input("bulk_insert_books Press Enter to continue...")
+        except Exception as e:
+            print(f"An error occurred during batch insert of a chunk: {e}")
+            # Optionally, log the chunk or error for further analysis
+
 
 if __name__ == '__main__':
     recheck_book()

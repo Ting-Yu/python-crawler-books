@@ -8,5 +8,5 @@ app/recheck/models/__pycache__/*
 /lambda/python.zip
 /lambda/dobby_storage/__pycache__/*
 /venv/*
-app/recheck/compare_excel/*.xlsx
-app/recheck/saves/*.csv
+app/recheck/compare_excel/*
+app/recheck/saves/*
