@@ -146,3 +146,44 @@ def bulk_insert_books(upsert_data_list):
         print(f"An error occurred during batch insert: {e}")
     finally:
         session.close()  # Ensure the session is closed after operation
+
+
+def update_books_in_chunks(db: Session, updates: list, chunk_size: int = 50):
+    for i in range(0, len(updates), chunk_size):
+        chunk = updates[i:i + chunk_size]
+        # Check if a transaction is already in progress
+        if not db.in_transaction():
+            with db.begin():  # Start a transaction only if not already in one
+                update_chunk(db, chunk)
+        else:
+            update_chunk(db, chunk)
+
+
+def update_chunk(db: Session, chunk: list):
+    # sale_discount_cases = sqlalchemy_config.case(
+    #     {update['book_id']: update['sale_discount'] for update in chunk},
+    #     else_=Book.sale_discount
+    # )
+    # purchase_discount_cases = sqlalchemy_config.case(
+    #     {update['book_id']: update['purchase_discount'] for update in chunk},
+    #     else_=Book.purchase_discount
+    # )
+
+    can_refund_updates = {update['book_id']: update['can_refund'] for update in chunk}
+
+    can_refund_case = sqlalchemy_config.case(
+        *[(Book.book_id == book_id, can_refund) for book_id, can_refund in can_refund_updates.items()],
+        else_=Book.can_refund  # Use the current value of can_refund as the default
+    )
+
+    db.execute(
+        sqlalchemy_config.update(Book).
+        values(
+            # sale_discount=sale_discount_cases,
+            # purchase_discount=purchase_discount_cases,
+            can_refund=can_refund_case
+        ).
+        where(Book.book_id.in_([update['book_id'] for update in chunk]))
+    )
+    if db.in_transaction():
+        db.commit()

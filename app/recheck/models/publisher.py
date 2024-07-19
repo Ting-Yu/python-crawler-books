@@ -25,7 +25,7 @@ def get_all_publishers(db: sqlalchemy_config.Session, filters: list, skip: int =
     for filter_condition in filters:
         query = query.filter(filter_condition)
     return query.offset(skip).limit(limit).all()
-def get_paginated_orders(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+def get_paginated_publishers(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Publisher)
     for filter_condition in filters:
         query = query.filter(filter_condition)

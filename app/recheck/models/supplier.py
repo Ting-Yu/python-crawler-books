@@ -1,6 +1,8 @@
 from sqlalchemy import Column, BigInteger, String, Text, Integer, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from . import sqlalchemy_config
+from sqlalchemy_pagination import paginate
+from sqlalchemy.orm import sessionmaker
 
 class Supplier(sqlalchemy_config.Base):
     __tablename__ = 'suppliers'
@@ -39,3 +41,43 @@ class Supplier(sqlalchemy_config.Base):
     checked_price = Column(Integer, nullable=False, default=0)
 
     purchases = relationship("Purchase", back_populates="supplier")
+
+def get_all_suppliers(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
+    query = db.query(Supplier)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return query.offset(skip).limit(limit).all()
+def get_paginated_suppliers(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Supplier)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)
+
+# Create a sessionmaker, bind it to your engine
+Session = sessionmaker(bind=sqlalchemy_config.engine)
+
+def update_suppliers_in_chunks(db: Session, updates: list, chunk_size: int = 50):
+    for i in range(0, len(updates), chunk_size):
+        chunk = updates[i:i + chunk_size]
+        # Check if a transaction is already in progress
+        if not db.in_transaction():
+            with db.begin():  # Start a transaction only if not already in one
+                update_chunk(db, chunk)
+        else:
+            update_chunk(db, chunk)
+def update_chunk(db: Session, chunk: list):
+    # Prepare CASE statements for each field
+    return_goods = sqlalchemy_config.case(
+        {update['supplier_id']: update['return_goods'] for update in chunk},
+        else_=Supplier.return_goods
+    )
+
+    db.execute(
+        sqlalchemy_config.update(Supplier).
+        values(
+            return_goods=return_goods
+        ).
+        where(Supplier.supplier_id.in_([update['supplier_id'] for update in chunk]))
+    )
+    if db.in_transaction():
+        db.commit()

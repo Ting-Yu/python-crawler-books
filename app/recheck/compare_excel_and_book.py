@@ -183,7 +183,7 @@ def recheck_book():
                     handle_error(book_id, isbn, title, status, book_result)
 
             if len(upsert_data_list) > 0:
-                # batch_insert_with_chunks(upsert_data_list, 100)
+                batch_insert_with_chunks(upsert_data_list, 100)
                 save_upsert_data_to_csv(upsert_data_list, file_number)
             # input("Press Enter to continue...")
 
