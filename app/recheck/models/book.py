@@ -160,14 +160,18 @@ def update_books_in_chunks(db: Session, updates: list, chunk_size: int = 50):
 
 
 def update_chunk(db: Session, chunk: list):
-    # sale_discount_cases = sqlalchemy_config.case(
-    #     {update['book_id']: update['sale_discount'] for update in chunk},
-    #     else_=Book.sale_discount
-    # )
-    # purchase_discount_cases = sqlalchemy_config.case(
-    #     {update['book_id']: update['purchase_discount'] for update in chunk},
-    #     else_=Book.purchase_discount
-    # )
+    publisher_id_cases = sqlalchemy_config.case(
+        {update['book_id']: update['publisher_id'] for update in chunk},
+        else_=Book.publisher_id
+    )
+    sale_discount_cases = sqlalchemy_config.case(
+        {update['book_id']: update['sale_discount'] for update in chunk},
+        else_=Book.sale_discount
+    )
+    purchase_discount_cases = sqlalchemy_config.case(
+        {update['book_id']: update['purchase_discount'] for update in chunk},
+        else_=Book.purchase_discount
+    )
 
     can_refund_updates = {update['book_id']: update['can_refund'] for update in chunk}
 
@@ -179,8 +183,9 @@ def update_chunk(db: Session, chunk: list):
     db.execute(
         sqlalchemy_config.update(Book).
         values(
-            # sale_discount=sale_discount_cases,
-            # purchase_discount=purchase_discount_cases,
+            publisher_id=publisher_id_cases,
+            sale_discount=sale_discount_cases,
+            purchase_discount=purchase_discount_cases,
             can_refund=can_refund_case
         ).
         where(Book.book_id.in_([update['book_id'] for update in chunk]))
