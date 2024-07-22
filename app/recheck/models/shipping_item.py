@@ -2,6 +2,8 @@ from sqlalchemy import Column, BigInteger, String, Integer, DECIMAL, Text, DateT
 from sqlalchemy.orm import relationship
 from . import sqlalchemy_config
 from sqlalchemy_pagination import paginate
+from sqlalchemy.orm import sessionmaker
+
 
 class ShippingItem(sqlalchemy_config.Base):
     __tablename__ = 'shipping_items'
@@ -51,3 +53,50 @@ def update_purchase_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: 
         db.commit()
         db.refresh(purchase_item)
     return purchase_item
+
+
+# Create a sessionmaker, bind it to your engine
+Session = sessionmaker(bind=sqlalchemy_config.engine)
+
+
+def update_shipping_item_in_chunks(db: Session, updates: list, chunk_size: int = 50):
+    for i in range(0, len(updates), chunk_size):
+        chunk = updates[i:i + chunk_size]
+        # Check if a transaction is already in progress
+        if not db.in_transaction():
+            with db.begin():  # Start a transaction only if not already in one
+                update_chunk_shipping(db, chunk)
+        else:
+            update_chunk_shipping(db, chunk)
+
+
+# def update_chunk_shipping(db: Session, chunk: list):
+#     input(f"Chunk: {chunk}")
+#     book_id_cases = sqlalchemy_config.case(
+#         {update['id']: update['book_id'] for update in chunk},
+#         else_=ShippingItem.book_id
+#     )
+#     isbn_cases = sqlalchemy_config.case(
+#         {update['id']: update['isbn'] for update in chunk},
+#         else_=ShippingItem.isbn
+#     )
+#
+#     db.execute(
+#         sqlalchemy_config.update(ShippingItem).
+#         values(
+#             book_id=book_id_cases,
+#             isbn=isbn_cases
+#         ).
+#         where(ShippingItem.id.in_([update['id'] for update in chunk]))
+#     )
+#     if db.in_transaction():
+#         db.commit()
+
+def update_chunk_shipping(db: Session, chunk: list):
+    for update in chunk:
+        # Perform an individual update for each item in the chunk
+        db.query(ShippingItem).filter(ShippingItem.id == update['id']).update({
+            ShippingItem.book_id: update['book_id'],
+            ShippingItem.isbn: update['isbn']
+        }, synchronize_session=False)
+    db.commit()

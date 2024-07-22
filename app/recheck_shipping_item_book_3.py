@@ -1,6 +1,7 @@
 import os
 
 import re
+import time
 
 import recheck.models.book as book_model
 import recheck.models.shipping_item as shipping_model
@@ -304,7 +305,7 @@ def crawl_book_info(url):
     book_info = {}  # 建立一個空字典來儲存書的資訊
 
     path = urlparse(url).path
-
+    time.sleep(3)
     soup = crawler_tools.get_page_content(url)  # Pass the logger instance as an argument
     if soup is not None:
         # 解析資料
