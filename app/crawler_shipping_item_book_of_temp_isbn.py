@@ -1,10 +1,10 @@
-
 import os
 
 import re
+import time
 
 import recheck.models.book as book_model
-import recheck.models.shipping_item as shipping_model
+import recheck.models.shipping_item as shipping_item_model
 import recheck.models.publisher as publisher_model
 import recheck.models.sqlalchemy_config as sqlalchemy_config
 import requests
@@ -16,11 +16,16 @@ import csv
 import random
 from itertools import cycle
 import crawler_tools
+from crawler_tools import timestamp
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+
 
 def save_publish_name_to_csv(publish_name):
     with open('unfound_publishers.csv', mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow([publish_name])
+
 
 def extract_id_from_url(url):
     # 使用正則表達式匹配編號
@@ -34,77 +39,79 @@ def extract_id_from_url(url):
         print(f"Error: {e}")
         return None
 
-# Create a session object
-session = requests.Session()
-urls = [
-                "https://40cpahj6c9.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-                "https://dv9reei6e1.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-                "https://9yapqipth1.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-                "https://t1gfimphld.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-                "https://sa0i2knse6.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-                "https://7h05myr281.execute-api.ap-northeast-1.amazonaws.com/production/search_book"
-            ]
-url_iterator = cycle(urls)
 
 def recheck_shipping_item_book():
     db = sqlalchemy_config.get_db()
     page = 1
-    page_size = 5
+    page_size = 100
 
     while True:
-        shipping_items = shipping_model.get_paginated_shippings(db, [
-            shipping_model.ShippingItem.book_id.is_(None),
-            shipping_model.ShippingItem.temp_isbn.is_not(None),
-        ], page=page, page_size=page_size, sort_by=[(shipping_model.ShippingItem.id, 'desc')])
+        shipping_items = shipping_item_model.get_paginated_shippings(db, [
+            shipping_item_model.ShippingItem.book_id.is_(None),
+            shipping_item_model.ShippingItem.temp_isbn.is_not(None),
+        ], page=page, page_size=page_size, sort_by=[(shipping_item_model.ShippingItem.temp_isbn, 'asc')])
         print(f"Page: {page} Page Size: {page_size}")
         if not shipping_items:
             break
         for item in shipping_items.items:
-            crawler_tools.time.sleep(3)
-            temp_isbn = item.temp_isbn
-            temp_book_name = item.temp_book_name
+            book = book_model.get_book_by_isbns(db, [item.temp_isbn])
+            if len(book) > 1:
+                print(f"Book Found: {book[0].isbn} for Shipping Item Id: {item.id} , Count {len(book)}")
+                break
+            elif len(book) == 1:
+                print(f"Book Found: {book[0].isbn} for Shipping Item Id: {item.id} , Count {len(book)}")
+            else:
+                print(f"{book}")
+                # input("Press Enter to continue...")
 
-            # Define the API endpoint and payload
-            api_key = os.getenv('FRIBOOKER_X_API_KEY')
-            url = next(url_iterator)
-            print(f"API URL: {url}")
-            headers = {
-                'x-api-key': api_key
-            }
-            payload = {
-                "url": "https://search.books.com.tw/search/query/key/"+temp_isbn
-            }
-            try:
-                response = session.post(url, json=payload, headers=headers, timeout=5)
-                print(f"Temp Book Name: {temp_book_name}")
-                if response.status_code == 200:
-                    try:
-                        data = response.json()
-                        modify_data(data, db, temp_isbn)
+                crawler_tools.time.sleep(3)
+                shipping_item_id = item.id
+                temp_isbn = item.temp_isbn
+                temp_book_name = item.temp_book_name
 
+                url = "https://search.books.com.tw/search/query/key/" + temp_isbn
+                try:
+                    book_info = {}
+                    book_info = crawl_search_book_info(url)
 
-                    except Exception as e:
-                        print(f"Exception Error: {e}")
+                    if book_info is None:
+                        print(f"***Failed to get book information for ISBN {temp_isbn}. URL: {url}")
+                        continue  # Skip to the next iteration
 
-                else:
-                    print(f"Failed to fetch data: {response.status_code} message: {response.text}")
+                    none_count = sum(value is None for value in book_info.values())
 
-            except (RequestException, Timeout) as e:
-                print(f"Request failed: {e}")
+                    # Exit the function if there are 5 or more None values
+                    if none_count >= 8:
+                        print(f"***Insufficient book information. Exiting function. {temp_isbn} , url =>> {url}")
+                    else:
+                        print(f"Success Shipping Item Id: {shipping_item_id}")
+                        print(f"{book_info}")
+                        modify_data(book_info, db, temp_isbn)
+
+                    # input("Press Enter to continue...")
+                    # response = session.post(url, json=payload, headers=headers, timeout=5)
+                    # print(f"Temp Book Name: {temp_book_name}")
+                    # if response.status_code == 200:
+                    #     try:
+                    #         data = response.json()
+                    #         modify_data(data, db, temp_isbn)
+                    #
+                    #
+                    #     except Exception as e:
+                    #         print(f"Exception Error: {e}")
+                    #
+                    # else:
+                    #     print(f"Failed to fetch data: {response.status_code} message: {response.text}")
+
+                except (RequestException, Timeout) as e:
+                    print(f"Request failed: {e}")
 
         page += 1
 
     db.close()
 
 
-def modify_data(data,db,temp_isbn):
-    result = data.get('result', '')
-
-    nested_data = json.loads(result)
-    # 提取書籍資訊
-    book_info = nested_data.get('book_info', {})
-    # print(book_info)
-
+def modify_data(book_info, db, temp_isbn):
     url = book_info.get('網址')
     book_crawler_id = extract_id_from_url(url)
     category = book_info.get('商品類別')
@@ -116,7 +123,7 @@ def modify_data(data,db,temp_isbn):
     author = book_info.get('作者中文名')
     author_foreign = book_info.get('作者外文名')
     translator = book_info.get('譯者')
-    isbn = book_info.get('ISBNISSN')
+    isbn = book_info.get('ISBN/ISSN')
     price = book_info.get('定價')
     china_book_classification_number = book_info.get('中國圖書分類號')
     open_number = book_info.get('開數')
@@ -133,14 +140,14 @@ def modify_data(data,db,temp_isbn):
     award = book_info.get('得獎與推薦紀錄')
     event = book_info.get('重要事件')
 
-    pages_numbers_only = re.findall(r'\d+', pages)
-
-    # Convert the extracted numbers to a single integer, assuming the first match is the desired one
-    pages = int(pages_numbers_only[0]) if pages_numbers_only else 0
+    # pages_numbers_only = re.findall(r'\d+', pages)
+    #
+    # # Convert the extracted numbers to a single integer, assuming the first match is the desired one
+    # pages = int(pages_numbers_only[0]) if pages_numbers_only else 0
 
     print(f"Book Crawler ID: {book_crawler_id}")
     # print(f"Category: {category}")
-    print(f"Title: {title}")
+    # print(f"Title: {title}")
     # print(f"Origin Title: {origin_title}")
     # print(f"Book Number: {book_number}")
     # print(f"Publish Name: {publisher_name}")
@@ -148,12 +155,12 @@ def modify_data(data,db,temp_isbn):
     # print(f"Author: {author}")
     # print(f"Author Foreign: {author_foreign}")
     # print(f"Translator: {translator}")
-    print(f"ISBN: {isbn}")
+    # print(f"ISBN: {isbn}")
     # print(f"Price: {price}")
     # print(f"China Book Classification Number: {china_book_classification_number}")
     # print(f"Open Number: {open_number}")
     # print(f"Binding: {binding}")
-    print(f"Pages: {pages}")
+    # print(f"Pages: {pages}")
     # print(f"Edition: {edition}")
     # print(f"Level: {level}")
     # print(f"Printing: {printing}")
@@ -211,13 +218,14 @@ def modify_data(data,db,temp_isbn):
 
         if book:
             print(f"Book ID: {book.book_id} of {book.title}")
-            shipping_model.update_purchase_item_by_temp_isbn(db, temp_isbn, {'book_id': book.book_id, 'isbn': isbn})
-        print(f"-----")
-        # input("Press Enter to continue...")
+            shipping_item_model.update_purchase_item_by_temp_isbn(db, temp_isbn, {'book_id': book.book_id, 'isbn': isbn})
+            print(f"-----")
+            # input("Press Enter to continue...")
     else:
         save_publish_name_to_csv(publisher_name)
         print(f"Publisher {publisher_name} not found")
         print(f"-----")
+
     #### 會寫入
     # isbn = Column(String(255), nullable=True, comment='ISBN')
     # title = Column(String(255), nullable=False, comment='書名')
@@ -261,64 +269,62 @@ def modify_data(data,db,temp_isbn):
     # publisher_name = Column(String(255), nullable=True)
 
 
-# # # Create a session object
-# session = requests.Session()
-# urls = [
-#     "https://40cpahj6c9.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-#     "https://dv9reei6e1.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-#     "https://9yapqipth1.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-#     "https://t1gfimphld.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-#     "https://sa0i2knse6.execute-api.ap-northeast-1.amazonaws.com/production/search_book",
-#     "https://7h05myr281.execute-api.ap-northeast-1.amazonaws.com/production/search_book"
-# ]
-# url_iterator = cycle(urls)
-#
-# def fetch_data(temp_isbn, url, headers, db):
-#     payload = {
-#         "url": f"https://search.books.com.tw/search/query/key/{temp_isbn}"
-#     }
-#     try:
-#         response = session.post(url, json=payload, headers=headers, timeout=5)
-#         if response.status_code == 200:
-#             try:
-#                 data = response.json()
-#                 modify_data(data, db, temp_isbn)
-#             except Exception as e:
-#                 print(f"Exception Error: {e}")
-#         else:
-#             print(f"Failed to fetch data: {response.status_code}")
-#     except (RequestException, Timeout) as e:
-#         print(f"Request failed: {e}")
+def crawl_search_book_info(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-# def recheck_shipping_item_book():
-#     db = sqlalchemy_config.get_db()
-#     page = 1
-#     page_size = 50
-#     api_key = os.getenv('FRIBOOKER_X_API_KEY')
-#     headers = {'x-api-key': api_key}
-#
-#     while True:
-#         shipping_items = shipping_model.get_paginated_shippings(db, [
-#             shipping_model.ShippingItem.book_id.is_(None),
-#             shipping_model.ShippingItem.temp_isbn.is_not(None),
-#         ], page=page, page_size=page_size)
-#         if not shipping_items:
-#             break
-#
-#         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-#             futures = [
-#                 executor.submit(fetch_data, item.temp_isbn, next(url_iterator), headers, db)
-#                 for item in shipping_items.items
-#             ]
-#             for future in concurrent.futures.as_completed(futures):
-#                 try:
-#                     future.result()
-#                 except Exception as e:
-#                     print(f"Thread generated an exception: {e}")
-#
-#         page += 1
-#
-#     db.close()
+        return find_cheapest_book(soup)
+
+        # 將 soup 寫入檔案
+        # crawler_tools.write_soup_to_file(soup, 'output.html')
+    else:
+        print(f"Failed to get page content: {url}")
+        return None
+
+
+def find_cheapest_book(soup):
+    book_info = {}
+    books = soup.find_all('div', class_='table-td')
+
+    min_price = float('inf')
+    cheapest_book_url = None
+
+    for book in books:
+        type_elem = book.find('p')
+        if type_elem and '中文書' in type_elem.text:
+            price_elem = book.find('ul', class_='price clearfix')
+            if price_elem:
+                price = price_elem.find('b')
+                if price:
+                    price = int(price.text.replace(',', ''))
+                    if price < min_price:
+                        min_price = price
+                        url_elem = book.find('a')
+                        if url_elem:
+                            cheapest_book_url = url_elem['href']
+
+    if cheapest_book_url:
+        cheapest_book_url = 'https:' + cheapest_book_url
+        # print(cheapest_book_url)
+        book_data = crawl_book_info(cheapest_book_url)
+        book_info = book_data
+
+    return book_info
+
+
+def crawl_book_info(url):
+    book_info = {}  # 建立一個空字典來儲存書的資訊
+
+    path = urlparse(url).path
+    time.sleep(3)
+    soup = crawler_tools.get_page_content(url)  # Pass the logger instance as an argument
+    if soup is not None:
+        # 解析資料
+        book_info = crawler_tools.extract_book_info(url, soup)
+
+    return book_info
+
 
 if __name__ == "__main__":
     # print("Start rechecking shipping items")

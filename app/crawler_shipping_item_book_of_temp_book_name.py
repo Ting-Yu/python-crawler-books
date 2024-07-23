@@ -4,7 +4,7 @@ import re
 import time
 
 import recheck.models.book as book_model
-import recheck.models.shipping_item as shipping_model
+import recheck.models.shipping_item as shipping_item_model
 import recheck.models.publisher as publisher_model
 import recheck.models.sqlalchemy_config as sqlalchemy_config
 import requests
@@ -43,63 +43,75 @@ def extract_id_from_url(url):
 def recheck_shipping_item_book():
     db = sqlalchemy_config.get_db()
     page = 1
-    page_size = 5
+    page_size = 100
 
     while True:
-        shipping_items = shipping_model.get_paginated_shippings(db, [
-            shipping_model.ShippingItem.book_id.is_(None),
-            shipping_model.ShippingItem.temp_isbn.is_not(None),
-        ], page=page, page_size=page_size, sort_by=[(shipping_model.ShippingItem.temp_isbn, 'asc')])
+        shipping_items = shipping_item_model.get_paginated_shippings(db, [
+            shipping_item_model.ShippingItem.book_id.is_(None),
+            shipping_item_model.ShippingItem.temp_book_name.is_not(None)
+        ], page=page, page_size=page_size, sort_by=[(shipping_item_model.ShippingItem.temp_book_name, 'asc')])
         print(f"Page: {page} Page Size: {page_size}")
         if not shipping_items:
             break
         for item in shipping_items.items:
-            crawler_tools.time.sleep(3)
-            temp_isbn = item.temp_isbn
-            temp_book_name = item.temp_book_name
+            book = book_model.get_book_by_titles(db, [item.temp_book_name])
+            if len(book) > 1:
+                print(f"Book Found: {book[0].title} for Shipping Item Id: {item.id} , Count {len(book)}")
+                break
+            elif len(book) == 1:
+                print(f"Book Found: {book[0].title} for Shipping Item Id: {item.id} , Count {len(book)}")
+            else:
+                # print(f"{book}")
+                print(f"Book Not Found for Shipping Item Id: {item.id} , Book Name: {item.temp_book_name}")
 
-            url = "https://search.books.com.tw/search/query/key/" + temp_isbn
-            try:
-                book_info = {}
-                book_info = crawl_search_book_info(url)
+                crawler_tools.time.sleep(3)
+                temp_isbn = item.temp_isbn
+                temp_book_name = item.temp_book_name
 
-                if book_info is None:
-                    print(f"Failed to get book information for ISBN {temp_isbn}. URL: {url}")
-                    continue  # Skip to the next iteration
+                url = "https://search.books.com.tw/search/query/key/" + temp_book_name
+                try:
+                    book_info = {}
+                    book_info = crawl_search_book_info(url)
 
-                none_count = sum(value is None for value in book_info.values())
+                    if book_info is None:
+                        print(f"Failed to get book information for Book Name {temp_book_name}. URL: {url}")
+                        continue  # Skip to the next iteration
 
-                # Exit the function if there are 5 or more None values
-                if none_count >= 5:
-                    print(f"Insufficient book information. Exiting function. {temp_isbn} , url =>> {url}")
-                else:
-                    # print(f"{book_info}")
-                    modify_data(book_info, db, temp_isbn)
+                    none_count = sum(value is None for value in book_info.values())
 
-                # input("Press Enter to continue...")
-                # response = session.post(url, json=payload, headers=headers, timeout=5)
-                # print(f"Temp Book Name: {temp_book_name}")
-                # if response.status_code == 200:
-                #     try:
-                #         data = response.json()
-                #         modify_data(data, db, temp_isbn)
-                #
-                #
-                #     except Exception as e:
-                #         print(f"Exception Error: {e}")
-                #
-                # else:
-                #     print(f"Failed to fetch data: {response.status_code} message: {response.text}")
+                    # Exit the function if there are 5 or more None values
+                    if none_count >= 8:
+                        print(f"*****Insufficient book information. Exiting function. {temp_book_name} , url =>> {url}")
+                        # input(f"{book_info}")
+                    else:
+                        print(f"Book Info: {book_info}")
+                        # input("*****Press Enter to continue...")
+                        modify_data(book_info, db, temp_book_name)
 
-            except (RequestException, Timeout) as e:
-                print(f"Request failed: {e}")
+                    # input("Press Enter to continue...")
+                    # response = session.post(url, json=payload, headers=headers, timeout=5)
+                    # print(f"Temp Book Name: {temp_book_name}")
+                    # if response.status_code == 200:
+                    #     try:
+                    #         data = response.json()
+                    #         modify_data(data, db, temp_isbn)
+                    #
+                    #
+                    #     except Exception as e:
+                    #         print(f"Exception Error: {e}")
+                    #
+                    # else:
+                    #     print(f"Failed to fetch data: {response.status_code} message: {response.text}")
+
+                except (RequestException, Timeout) as e:
+                    print(f"Request failed: {e}")
 
         page += 1
 
     db.close()
 
 
-def modify_data(book_info, db, temp_isbn):
+def modify_data(book_info, db, temp_book_name):
     url = book_info.get('網址')
     book_crawler_id = extract_id_from_url(url)
     category = book_info.get('商品類別')
@@ -201,12 +213,13 @@ def modify_data(book_info, db, temp_isbn):
             'limit_count': 0,
         }
 
+
         book_model.upsert_book(db, upsert_data)
         book = book_model.get_book_by_isbn(db, isbn)
 
         if book:
             print(f"Book ID: {book.book_id} of {book.title}")
-            shipping_model.update_purchase_item_by_temp_isbn(db, temp_isbn, {'book_id': book.book_id, 'isbn': isbn})
+            shipping_item_model.update_purchase_item_by_temp_book_name(db, temp_book_name, {'book_id': book.book_id, 'isbn': isbn})
             print(f"-----")
             # input("Press Enter to continue...")
     else:

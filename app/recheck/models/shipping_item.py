@@ -54,6 +54,16 @@ def update_purchase_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: 
         db.refresh(purchase_item)
     return purchase_item
 
+def update_purchase_item_by_temp_book_name(db: sqlalchemy_config.Session, temp_book_name: str, updates: dict):
+    purchase_item = db.query(ShippingItem).filter(ShippingItem.temp_book_name == temp_book_name).first()
+    if purchase_item:
+        for key, value in updates.items():
+            if hasattr(purchase_item, key):
+                setattr(purchase_item, key, value)
+        db.commit()
+        db.refresh(purchase_item)
+    return purchase_item
+
 
 # Create a sessionmaker, bind it to your engine
 Session = sessionmaker(bind=sqlalchemy_config.engine)
