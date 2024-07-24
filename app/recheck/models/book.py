@@ -195,3 +195,11 @@ def update_chunk(db: Session, chunk: list):
     )
     if db.in_transaction():
         db.commit()
+
+def delete_book_by_id(db: sqlalchemy_config.Session, book_id: int):
+    book = db.query(Book).filter(Book.book_id == book_id).first()
+    if book:
+        db.delete(book)
+        db.commit()
+        return True
+    return False

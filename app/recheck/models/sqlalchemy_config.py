@@ -16,6 +16,7 @@ DB_PASSWORD = os.environ.get('FRIBOOKER_DB_PASSWORD')
 print(f"DB_HOST: {DB_HOST}")
 print(f"DB_PORT: {DB_PORT}")
 print(f"DB_DATABASE: {DB_DATABASE}")
+print(f"DB_USERNAME: {DB_USERNAME}")
 print(f"DB_PASSWORD: {DB_PASSWORD}")
 input("Press Enter to continue... Start...")
 

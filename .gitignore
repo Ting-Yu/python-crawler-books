@@ -10,3 +10,4 @@ app/recheck/models/__pycache__/*
 /venv/*
 app/recheck/compare_excel/*
 app/recheck/saves/*
+app/recheck/modify_excel/*
