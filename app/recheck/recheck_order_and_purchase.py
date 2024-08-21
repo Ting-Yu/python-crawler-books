@@ -111,7 +111,16 @@ def use_get_all_orders():
     all_orders = []
 
     while True:
-        paginated_result = order_model.get_paginated_orders(db, [], page=page, page_size=page_size)
+        paginated_result = order_model.get_paginated_orders(db, [
+            order_model.Order.order_id.in_([
+                "com202407260002901",
+                "com202407270014701",
+                "com202407180013701",
+                "com202407220014601",
+                "com202407290005901",
+                "com202407290005902",
+            ])
+        ], page=page, page_size=page_size)
         orders = paginated_result.items
         if not orders:
             break
@@ -168,7 +177,18 @@ def use_get_all_purchases():
     all_purchases = []
 
     while True:
-        paginated_result = purchase_model.get_paginated_purchases(db, [], page=page, page_size=page_size)
+        paginated_result = purchase_model.get_paginated_purchases(db, [
+            purchase_model.Purchase.purchase_id.in_([
+                "pom202407290204403",
+                "pom202407290207301",
+                "pom202407260207301",
+                "pom202407310204901",
+                "pom202407300207301",
+                "pom202408020000301",
+                "pom202408050000301",
+                "pom202408050212801",
+            ])
+        ], page=page, page_size=page_size)
         purchases = paginated_result.items
         if not purchases:
             break
@@ -254,21 +274,21 @@ if __name__ == '__main__':
     row_num = 2
 
     # Create a new Excel workbook and add a worksheet
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "Orders"
-
-    # Write headers
-    headers = ["採購訂單編號", "採購訂單明細編號", "書籍編號",
-               "書籍定價", "正確的書籍定價", "銷售折扣", "正確的銷售折扣", "採購折扣", "正確的採購折扣"]
-    for col_num, header in enumerate(headers, 1):
-        col_letter = get_column_letter(col_num)
-        sheet[f"{col_letter}1"] = header
-
-    # Define yellow fill pattern
-    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-
-    use_get_all_purchases()
-
-    # Save the workbook
-    workbook.save("purchases.xlsx")
+    # workbook = openpyxl.Workbook()
+    # sheet = workbook.active
+    # sheet.title = "Orders"
+    #
+    # # Write headers
+    # headers = ["採購訂單編號", "採購訂單明細編號", "書籍編號",
+    #            "書籍定價", "正確的書籍定價", "銷售折扣", "正確的銷售折扣", "採購折扣", "正確的採購折扣"]
+    # for col_num, header in enumerate(headers, 1):
+    #     col_letter = get_column_letter(col_num)
+    #     sheet[f"{col_letter}1"] = header
+    #
+    # # Define yellow fill pattern
+    # yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    #
+    # use_get_all_purchases()
+    #
+    # # Save the workbook
+    # workbook.save("purchases.xlsx")

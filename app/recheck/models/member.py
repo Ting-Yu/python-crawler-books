@@ -38,6 +38,10 @@ class Member(sqlalchemy_config.Base):
 
     orders = relationship("Order", back_populates="member")
     purchases = relationship("Purchase", back_populates="member")
+    # carts = relationship("Cart", back_populates="member")
+    # nexts = relationship("Next", back_populates="member")
+    # stock_histories = relationship("StockHistory", back_populates="created_by_member")
+    # stocks = relationship("Stock", back_populates="created_by_member")
 
 def get_member_by_name(db: sqlalchemy_config.Session, member_name: str):
     print(f"*** get_member_by_name: {member_name}")

@@ -52,7 +52,10 @@ class Book(sqlalchemy_config.Base):
     order_items = relationship("OrderItem", back_populates="book")
     purchase_items = relationship("PurchaseItem", back_populates="book")
     shipping_items = relationship("ShippingItem", back_populates="book")
-
+    # carts = relationship("Cart", back_populates="book")
+    # nexts = relationship("Next", back_populates="book")
+    # stock_histories = relationship("StockHistory", back_populates="book")
+    # stock_items = relationship("StockItem", back_populates="book")
 
 def get_all_books(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
     query = db.query(Book)

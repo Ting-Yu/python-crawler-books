@@ -41,3 +41,16 @@ def update_purchase_item_by_id(db: sqlalchemy_config.Session, purchase_item_id: 
         db.commit()
         db.refresh(purchase_item)
     return purchase_item
+
+def get_purchase_item_by_book_id(db: sqlalchemy_config.Session, book_id: int):
+    return db.query(PurchaseItem).filter(PurchaseItem.book_id == book_id).all()
+
+def update_purchase_item_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates: dict):
+    purchase_items = db.query(PurchaseItem).filter(PurchaseItem.book_id == book_id).all()
+    if purchase_items:
+        for purchase_item in purchase_items:
+            for key, value in updates.items():
+                if hasattr(purchase_item, key):
+                    setattr(purchase_item, key, value)
+        db.commit()
+        db.refresh(purchase_item)

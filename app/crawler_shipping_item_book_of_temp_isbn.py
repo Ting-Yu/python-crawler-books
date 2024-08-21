@@ -218,7 +218,7 @@ def modify_data(book_info, db, temp_isbn):
 
         if book:
             print(f"Book ID: {book.book_id} of {book.title}")
-            shipping_item_model.update_purchase_item_by_temp_isbn(db, temp_isbn, {'book_id': book.book_id, 'isbn': isbn})
+            shipping_item_model.update_shipping_item_by_temp_isbn(db, temp_isbn, {'book_id': book.book_id, 'isbn': isbn})
             print(f"-----")
             # input("Press Enter to continue...")
     else:

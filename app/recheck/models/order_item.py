@@ -39,3 +39,16 @@ def update_order_item_by_id(db: sqlalchemy_config.Session, order_item_id: int, u
         db.commit()
         db.refresh(order_item)
     return order_item
+
+def get_order_item_by_book_id(db: sqlalchemy_config.Session, book_id: int):
+    return db.query(OrderItem).filter(OrderItem.book_id == book_id).all()
+
+def update_order_item_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates: dict):
+    order_items = db.query(OrderItem).filter(OrderItem.book_id == book_id).all()
+    if order_items:
+        for order_item in order_items:
+            for key, value in updates.items():
+                if hasattr(order_item, key):
+                    setattr(order_item, key, value)
+        db.commit()
+        db.refresh(order_item)

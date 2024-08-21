@@ -43,26 +43,28 @@ def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1
 
     return paginate(query, page, page_size)
 
+def get_shipping_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: int):
+    return db.query(ShippingItem).filter(ShippingItem.temp_isbn == temp_isbn).all()
 
-def update_purchase_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: int, updates: dict):
-    purchase_item = db.query(ShippingItem).filter(ShippingItem.temp_isbn == temp_isbn).first()
-    if purchase_item:
-        for key, value in updates.items():
-            if hasattr(purchase_item, key):
-                setattr(purchase_item, key, value)
+def update_shipping_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: int, updates: dict):
+    shipping_items = db.query(ShippingItem).filter(ShippingItem.temp_isbn == temp_isbn).all()
+    if shipping_items:
+        for shipping_item in shipping_items:
+            for key, value in updates.items():
+                if hasattr(shipping_item, key):
+                    setattr(shipping_item, key, value)
         db.commit()
-        db.refresh(purchase_item)
-    return purchase_item
+        db.refresh(shipping_item)
 
-def update_purchase_item_by_temp_book_name(db: sqlalchemy_config.Session, temp_book_name: str, updates: dict):
-    purchase_item = db.query(ShippingItem).filter(ShippingItem.temp_book_name == temp_book_name).first()
-    if purchase_item:
+def update_shipping_item_by_temp_book_name(db: sqlalchemy_config.Session, temp_book_name: str, updates: dict):
+    shipping_item = db.query(ShippingItem).filter(ShippingItem.temp_book_name == temp_book_name).first()
+    if shipping_item:
         for key, value in updates.items():
-            if hasattr(purchase_item, key):
-                setattr(purchase_item, key, value)
+            if hasattr(shipping_item, key):
+                setattr(shipping_item, key, value)
         db.commit()
-        db.refresh(purchase_item)
-    return purchase_item
+        db.refresh(shipping_item)
+    return shipping_item
 
 
 # Create a sessionmaker, bind it to your engine
