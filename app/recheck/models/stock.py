@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy_pagination import paginate
 from sqlalchemy.orm import sessionmaker
 
+
 class Stock(sqlalchemy_config.Base):
     __tablename__ = 'stocks'
 
@@ -28,4 +29,12 @@ class Stock(sqlalchemy_config.Base):
     # supplier = relationship("Supplier", back_populates="stocks")
     # created_by_member = relationship("Member", back_populates="stocks")
     # purchase = relationship("Purchase", back_populates="stocks")
-    # stock_items = relationship("StockItem", back_populates="stock")
+    stock_items = relationship("StockItem", back_populates="stock")
+    # stock_histories = relationship("StockHistory", back_populates="stock")
+
+
+def get_paginated_stocks(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
+    query = db.query(Stock)
+    for filter_condition in filters:
+        query = query.filter(filter_condition)
+    return paginate(query, page, page_size)

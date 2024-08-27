@@ -4,6 +4,8 @@ import models.purchase as purchase_model
 import models.purchase_item as purchase_item_model
 import models.order as order_model
 import models.order_item as order_item_model
+import models.stock as stock_model
+import models.stock_item as stock_item_model
 
 import openpyxl
 from openpyxl.utils import get_column_letter
@@ -104,6 +106,59 @@ def export_purchases_to_excel(purchase, books):
         row_num += 1
 
 
+def export_stocks_to_excel(stock, books):
+    global row_num
+
+    # for order in orders:
+    stock_id = stock.stock_id
+    total_price = stock.total_price
+    current_total_price = 0
+    # order_row_num = row_num
+    # sheet[f"A{order_row_num}"] = stock_id
+    # sheet[f"B{order_row_num}"] = total_price
+    row_num += 1
+    for item in stock.stock_items:
+        stock_item_id = item.id
+        book = books.get(item.book_id)
+        price = book.price
+        sale_discount = book.sale_discount
+        purchase_discount = book.purchase_discount
+        tax = book.tax
+        in_stock_amount = item.in_stock_amount
+        # current_price = price
+        # current_total_price += real_round(current_price * in_stock_amount, 0)
+        # print(
+        #     f" Current Price: {current_price}, Book Price: {price}, Book Sale Discount: {book.sale_discount}")
+
+        # sheet[f"B{row_num}"] = stock_item_id
+        # sheet[f"C{row_num}"] = item.book_id
+        # sheet[f"D{row_num}"] = item.price
+        # # sheet[f"F{row_num}"] = current_price
+        # sheet[f"F{tax}"] = tax
+        # sheet[f"G{row_num}"] = price
+        # sheet[f"H{row_num}"] = item.sale_discount
+        # sheet[f"I{row_num}"] = sale_discount
+
+        # Apply yellow fill if item.price is not equal to current_price
+        if item.sale_discount != sale_discount or item.purchase_discount != purchase_discount or item.tax != tax:
+            for col in range(2, 11):  # Columns B to K
+                sheet[f"{get_column_letter(col)}{row_num}"].fill = yellow_fill
+
+            db = sqlalchemy_config.get_db()
+            stock_item_model.update_stock_item_by_id(db, stock_item_id,
+                                                     {
+                                                         "tax": tax,
+                                                         "sale_discount": sale_discount,
+                                                         "purchase_discount": purchase_discount
+                                                     })
+        row_num += 1
+
+    # sheet[f"C{order_row_num}"] = current_total_price
+    db = sqlalchemy_config.get_db()
+    # order_model.update_order_by_id(db, stock_id,
+    #                                {"total_price": current_total_price})
+
+
 def use_get_all_orders():
     db = sqlalchemy_config.get_db()
     page = 1
@@ -113,12 +168,30 @@ def use_get_all_orders():
     while True:
         paginated_result = order_model.get_paginated_orders(db, [
             order_model.Order.order_id.in_([
-                "com202407260002901",
-                "com202407270014701",
-                "com202407180013701",
-                "com202407220014601",
-                "com202407290005901",
-                "com202407290005902",
+                "com202408040034701",
+                "com202408020007101",
+                "com202408050034101",
+                "com202408080039401",
+                "com1720060475",
+                "com1720061374",
+                "com1720060475",
+                "com1720061374",
+                "com1720071823",
+                "com1720067836",
+                "com1720071823",
+                "com1720067836",
+                "com1720071823",
+                "com1720067836",
+                "com1720067247",
+                "com1720093119",
+                "com1720104084",
+                "com1720076728",
+                "com202408070038401",
+                "com202408080027401",
+                "com202408070018001",
+                "com202408080039401",
+                "com202408140002203",
+                "com202408080027401"
             ])
         ], page=page, page_size=page_size)
         orders = paginated_result.items
@@ -179,14 +252,38 @@ def use_get_all_purchases():
     while True:
         paginated_result = purchase_model.get_paginated_purchases(db, [
             purchase_model.Purchase.purchase_id.in_([
-                "pom202407290204403",
-                "pom202407290207301",
-                "pom202407260207301",
-                "pom202407310204901",
-                "pom202407300207301",
-                "pom202408020000301",
-                "pom202408050000301",
-                "pom202408050212801",
+                "pom202408060002904",
+                "pom202408060103501",
+                "pom202408060000301",
+                "pom202408060223201",
+                "pom202408060468501",
+                "pom202408050103602",
+                "pom202408070231001",
+                "pom202408080454301",
+                "pom202408080103602",
+                "pom20240808100000301",
+                "pom1720082663",
+                "pom1720082785",
+                "pom202407050000305",
+                "pom202407050000306",
+                "pom1720080532",
+                "pom202407050207111",
+                "pom202408080204901",
+                "pom202408120103603",
+                "pom202408120461601",
+                "pom202408090003001",
+                "pom202408080003001",
+                "pom202408140002801",
+                "pom202408140208601",
+                "pom202408200103603",
+                "pom1720082785",
+                "pom202407080208616",
+                "pom202408200103603",
+                "pom202407220208602",
+                "pom202408160208601",
+                "pom202408200103603",
+                "pom202407220208602",
+                "pom202408160208601",
             ])
         ], page=page, page_size=page_size)
         purchases = paginated_result.items
@@ -206,9 +303,9 @@ def use_get_all_purchases():
 
             for item in purchase.purchase_items:
                 book = book_dict.get(item.book_id)
-                sale_discount = book.sale_discount
-                purchase_discount = book.purchase_discount
                 if book:
+                    sale_discount = book.sale_discount
+                    purchase_discount = book.purchase_discount
                     current_price = book.price
                     if item.price != current_price or item.sale_discount != sale_discount or item.purchase_discount != purchase_discount:
                         # purchase_item_dict = vars(item)
@@ -241,8 +338,82 @@ def use_get_all_purchases():
     print('Done')
 
 
-if __name__ == '__main__':
+def use_get_all_stocks():
+    db = sqlalchemy_config.get_db()
+    page = 1
+    page_size = 100
+    all_stocks = []
+    while True:
+        paginated_result = stock_model.get_paginated_stocks(db, [
+            stock_model.Stock.stock_id.in_([
+                "sim202408090000301",
+                "sim202408100208601",
+                "sim202408100208602",
+                "sim202408110000301",
+                "sim202408110208601",
+                "sim202408110103702",
+                "sim202408110207105",
+                "sim202408120467001",
+                "sim202408090203801",
+                "sim202408160218901",
+                "sim202408160003002",
+                "sim202408160231005",
+                "sim20240819100000301"
+            ])
+        ], page=page, page_size=page_size)
+        stocks = paginated_result.items
+        if not stocks:
+            break
 
+        all_stocks.extend(stocks)
+
+        for stock in stocks:
+            print(f"Stock ID: {stock.stock_id}")
+            book_ids = [item.book_id for item in stock.stock_items]
+            # print(book_ids)
+            books = book_model.get_book_by_ids(db, book_ids)
+            book_dict = {book.book_id: book for book in books}
+
+            any_printed = False
+
+            for item in stock.stock_items:
+                book = book_dict.get(item.book_id)
+                if book:
+                    sale_discount = book.sale_discount
+                    purchase_discount = book.purchase_discount
+                    tax = book.tax
+                    if item.sale_discount != sale_discount or item.purchase_discount != purchase_discount or item.tax != tax:
+                        # purchase_item_dict = vars(item)
+                        # print(f"*** Purchase Item: {pformat(purchase_item_dict)}")
+                        print(
+                            f"  Stock Item ID: {item.id}, Book ID: {item.book_id}, "
+                            f"Item Tax: {item.tax}, Book Tax: {tax}"
+                            f"Item Sale Discount: {item.sale_discount}, Book Sale Discount: {sale_discount}"
+                            f"Item Purchase Discount: {item.purchase_discount}, Book Purchase Discount: {purchase_discount}"
+                        )
+                        any_printed = True
+                else:
+                    print(f"Book not found: {item.book_id}")
+                    input("Press Enter to continue...")
+                # print(
+                #     f"  Purchase Item ID: {item.id}, Book ID: {item.book_id}, Price: {item.price}, Sale Discount: {item.sale_discount})")
+
+            if any_printed:
+                # for book_id, book in book_dict.items():
+                #     print(f"Book ID: {book_id}, Book: {book.price}")
+
+                export_stocks_to_excel(stock, book_dict)
+
+        page += 1
+
+    total = len(all_stocks)
+    pages = (total // page_size) + (1 if total % page_size > 0 else 0)
+
+    print(f"Total: {total}, Pages: {pages}")
+    print('Done')
+
+
+if __name__ == '__main__':
     # Define row_num as a global variable
     row_num = 2
 
@@ -250,30 +421,30 @@ if __name__ == '__main__':
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.title = "Orders"
-
-    # Write headers
-    headers = ["銷售訂單編號", "銷售訂單明細編號", "書籍編號",
-               "售出價格（含折扣）", "正確的售出價格（含折扣）",
-               "正確書籍定價", "銷售折扣", "正確的銷售折扣"]
-    for col_num, header in enumerate(headers, 1):
-        col_letter = get_column_letter(col_num)
-        sheet[f"{col_letter}1"] = header
-
-    # Define yellow fill pattern
+    #
+    # # Write headers
+    # headers = ["銷售訂單編號", "銷售訂單明細編號", "書籍編號",
+    #            "售出價格（含折扣）", "正確的售出價格（含折扣）",
+    #            "正確書籍定價", "銷售折扣", "正確的銷售折扣"]
+    # for col_num, header in enumerate(headers, 1):
+    #     col_letter = get_column_letter(col_num)
+    #     sheet[f"{col_letter}1"] = header
+    #
+    # # Define yellow fill pattern
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-
-    # use_get_all_books()
-    use_get_all_orders()
-
-    # Save the workbook
-    workbook.save("orders.xlsx")
-
-    ###################
-
-    # Define row_num as a global variable
-    row_num = 2
-
-    # Create a new Excel workbook and add a worksheet
+    #
+    # # use_get_all_books()
+    # use_get_all_orders()
+    #
+    # # Save the workbook
+    # workbook.save("orders.xlsx")
+    #
+    # ###################
+    #
+    # # Define row_num as a global variable
+    # row_num = 2
+    #
+    # # Create a new Excel workbook and add a worksheet
     # workbook = openpyxl.Workbook()
     # sheet = workbook.active
     # sheet.title = "Orders"
@@ -292,3 +463,5 @@ if __name__ == '__main__':
     #
     # # Save the workbook
     # workbook.save("purchases.xlsx")
+
+    use_get_all_stocks()

@@ -29,17 +29,20 @@ def search_shipping_item_by_temp_isbn(isbns):
             for shipping_item in shipping_items:
                 book_id = shipping_item.book_id
                 if book_id is None:
-                    print(f"Null Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
-                    shipping_item_model.update_shipping_item_by_temp_isbn(db, temp_isbn, {"book_id": book_info_new_book_id})
+                    print(
+                        f"Null Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
+                    shipping_item_model.update_shipping_item_by_temp_isbn(db, temp_isbn,
+                                                                          {"book_id": book_info_new_book_id})
 
                 else:
                     if book_id == book_info_new_book_id:
-                        print(f"Success Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
+                        print(
+                            f"Success Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
                     else:
-                        print(f"Error Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
-                        shipping_item_model.update_shipping_item_by_temp_isbn(db, temp_isbn, {"book_id": book_info_new_book_id})
-
-
+                        print(
+                            f"Error Shipping Item: {shipping_item.id} | {shipping_item.temp_isbn} | {shipping_item.book_id} | {book_info_new_book_id}")
+                        shipping_item_model.update_shipping_item_by_temp_isbn(db, temp_isbn,
+                                                                              {"book_id": book_info_new_book_id})
 
     db.close()
 
@@ -52,7 +55,6 @@ def search_shipping_item_by_temp_isbn(isbns):
 
 
 def change_book_id(isbn, book_info):
-
     # order_items.book_id
     # purchase_items.book_id
     # stock_history.book_id
@@ -70,73 +72,82 @@ def change_book_id(isbn, book_info):
 
     old_book = book_model.get_book_by_id(db, book_info_old_book_id)
     old_book_id = old_book.book_id
-    print(f"Old Book ID: {old_book_id} = {book_info_old_book_id} | New Book ID: {new_book_id} = {book_info_new_book_id}")
-    print(f"Old Book ISBN: {old_book.isbn} = {book_info_isbn} | New Book ISBN: {new_book.isbn} = {book_info_isbn} ")
 
-    book_model.update_book_by_book_id(db, old_book_id, {"status": 99})
+    new_book = book_model.get_book_by_id(db, book_info_new_book_id)
 
-    carts = cart_model.get_cart_by_book_id(db,old_book_id)
-    if carts:
-        for cart in carts:
-            print(f"Cart: {cart.cart_id} | {cart.book_id}")
-        cart_model.update_cart_by_book_id(db, old_book_id, {"book_id": new_book_id})
-        # input("Press Enter to continue...")
+    if new_book:
+        print(
+            f"Old Book ID: {old_book_id} = {book_info_old_book_id} | New Book ID: {new_book_id} = {book_info_new_book_id}")
+        print(f"Old Book ISBN: {old_book.isbn} = {book_info_isbn} | New Book ISBN: {new_book.isbn} = {book_info_isbn} ")
 
-    nexts = next_model.get_next_by_book_id(db, old_book_id)
-    if nexts:
-        for next in nexts:
-            print(f"Next: {next.next_id} | {next.book_id}")
-        next_model.update_next_by_book_id(db, old_book_id, {"book_id": new_book_id})
-#         input("Press Enter to continue...")
+        book_model.update_book_by_book_id(db, old_book_id, {"status": 99})
 
-    order_items = order_item_model.get_order_item_by_book_id(db, old_book_id)
-    if order_items:
-        for order_item in order_items:
-            print(f"Order Item: {order_item.id} | {order_item.book_id}")
-        order_item_model.update_order_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
-#         input("Press Enter to continue...")
+        carts = cart_model.get_cart_by_book_id(db, old_book_id)
+        if carts:
+            for cart in carts:
+                print(f"Cart: {cart.cart_id} | {cart.book_id}")
+            cart_model.update_cart_by_book_id(db, old_book_id, {"book_id": new_book_id})
+            # input("Press Enter to continue...")
 
-    purchase_items = purchase_item_model.get_purchase_item_by_book_id(db, old_book_id)
-    if purchase_items:
-        for purchase_item in purchase_items:
-            print(f"Purchase Item: {purchase_item.id} | {purchase_item.book_id}")
-        purchase_item_model.update_purchase_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
-#         input("Press Enter to continue...")
+        nexts = next_model.get_next_by_book_id(db, old_book_id)
+        if nexts:
+            for next in nexts:
+                print(f"Next: {next.next_id} | {next.book_id}")
+            next_model.update_next_by_book_id(db, old_book_id, {"book_id": new_book_id})
+        #         input("Press Enter to continue...")
 
-    stock_histories = stock_history_model.get_stock_history_by_book_id(db, old_book_id)
-    if stock_histories:
-        for stock_history in stock_histories:
-            print(f"Stock History: {stock_history.id} | {stock_history.book_id}")
-        stock_history_model.update_stock_history_by_book_id(db, old_book_id, {"book_id": new_book_id})
-#         input("Press Enter to continue...")
+        order_items = order_item_model.get_order_item_by_book_id(db, old_book_id)
+        if order_items:
+            for order_item in order_items:
+                print(f"Order Item: {order_item.id} | {order_item.book_id}")
+            order_item_model.update_order_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
+        #         input("Press Enter to continue...")
 
-    stock_items = stock_item_model.get_stock_item_by_book_id(db, old_book_id)
-    if stock_items:
-        for stock_item in stock_items:
-            print(f"Stock Item: {stock_item.id} | {stock_item.book_id}")
-        stock_item_model.update_stock_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
-#         input("Press Enter to continue...")
+        purchase_items = purchase_item_model.get_purchase_item_by_book_id(db, old_book_id)
+        if purchase_items:
+            for purchase_item in purchase_items:
+                print(f"Purchase Item: {purchase_item.id} | {purchase_item.book_id}")
+            purchase_item_model.update_purchase_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
+        #         input("Press Enter to continue...")
+
+        stock_histories = stock_history_model.get_stock_history_by_book_id(db, old_book_id)
+        if stock_histories:
+            for stock_history in stock_histories:
+                print(f"Stock History: {stock_history.id} | {stock_history.book_id}")
+            stock_history_model.update_stock_history_by_book_id(db, old_book_id, {"book_id": new_book_id})
+        #         input("Press Enter to continue...")
+
+        stock_items = stock_item_model.get_stock_item_by_book_id(db, old_book_id)
+        if stock_items:
+            for stock_item in stock_items:
+                print(f"Stock Item: {stock_item.id} | {stock_item.book_id}")
+            stock_item_model.update_stock_item_by_book_id(db, old_book_id, {"book_id": new_book_id})
+        #         input("Press Enter to continue...")
+
+        book_model.update_book_by_book_id(db, old_book_id, {"status": 99})
+    else:
+        print(f"Failed to get book by id: {old_book_id} | new book id {new_book_id} | isbn {book_info_isbn}")
 
     db.close()
 
 
 if __name__ == '__main__':
     isbns = {
-        9780020240785:{"new_book_id":311118},
-        9786267344330:{"new_book_id":311491},
-        9786263554955:{"new_book_id":303340},
-        9786269807659:{"new_book_id":311457},
-        731559258818:{"new_book_id":293254},
-        9789757901259:{"new_book_id":308410},
-        9789571365688:{"new_book_id":311186},
-        9786263582330:{"new_book_id":311478},
-        9789869986878:{"new_book_id":311458},
-        4713482020881:{"new_book_id":301622},
-        9786267244548:{"new_book_id":311559},
-        9786267250938:{"new_book_id":311528},
-        9786263775343:{"new_book_id":301781},
-        9786267401347:{"new_book_id":310933},
-        9789570829648:{"new_book_id":311241}
+        9780020240785: {"new_book_id": 311118},
+        9786267344330: {"new_book_id": 311491},
+        9786263554955: {"new_book_id": 303340},
+        9786269807659: {"new_book_id": 311457},
+        731559258818: {"new_book_id": 293254},
+        9789757901259: {"new_book_id": 308410},
+        9789571365688: {"new_book_id": 311186},
+        9786263582330: {"new_book_id": 311478},
+        9789869986878: {"new_book_id": 311458},
+        4713482020881: {"new_book_id": 301622},
+        9786267244548: {"new_book_id": 311559},
+        9786267250938: {"new_book_id": 311528},
+        9786263775343: {"new_book_id": 301781},
+        9786267401347: {"new_book_id": 310933},
+        9789570829648: {"new_book_id": 311241}
     }
     search_shipping_item_by_temp_isbn(isbns)
 
@@ -192,7 +203,7 @@ if __name__ == '__main__':
         9789573329350: {"old_book_id": 311249, "new_book_id": 139886},
         9789867375452: {"old_book_id": 310897, "new_book_id": 16818},
         9789868860339: {"old_book_id": 311227, "new_book_id": 106864},
-        9789866789977: {"old_book_id": 311261, "new_book_id": 16687},
+        9789866789977: {"old_book_id": 311261, "new_book_id": 16687}
     }
     for isbn, book_info in isbns.items():
         change_book_id(isbn, book_info)

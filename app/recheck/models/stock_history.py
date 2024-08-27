@@ -6,11 +6,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy_pagination import paginate
 from sqlalchemy.orm import sessionmaker
 
+
 class StockHistory(sqlalchemy_config.Base):
     __tablename__ = 'stock_history'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    stock_id = Column(String(255), nullable=True)
+    stock_id = Column(String(255), ForeignKey('stocks.stock_id'), nullable=False)
     stock_item_id = Column(BigInteger, ForeignKey('stock_items.id'), nullable=True)
     type = Column(String(255), nullable=False, default='manual', comment='in_stock, to_shipping, system, manual')
     status = Column(String(255), nullable=False, default='pending', comment='pending, processing, completed, cancelled')
@@ -28,14 +29,15 @@ class StockHistory(sqlalchemy_config.Base):
     stock_before = Column(Integer, nullable=False, default=0)
     stock_after = Column(Integer, nullable=False, default=0)
 
-    # stock = relationship("Stock", back_populates="stock_histories")
-    # stock_item = relationship("StockItem", back_populates="stock_histories")
+    stock = relationship("Stock", back_populates="stock_histories")
+    stock_item = relationship("StockItem", back_populates="stock_histories")
     # book = relationship("Book", back_populates="stock_histories")
     # created_by_member = relationship("Member", back_populates="stock_histories")
 
 
 def get_stock_history_by_book_id(db: sqlalchemy_config.Session, book_id: int):
     return db.query(StockHistory).filter(StockHistory.book_id == book_id).all()
+
 
 def update_stock_history_by_book_id(db: sqlalchemy_config.Session, book_id: int, updates: dict):
     stock_histories = db.query(StockHistory).filter(StockHistory.book_id == book_id).all()
