@@ -27,7 +27,7 @@ class ShippingItem(sqlalchemy_config.Base):
 
     shipping = relationship("Shipping", back_populates="shipping_items")
     book = relationship("Book", back_populates="shipping_items")
-
+    sales_return_shipping = relationship("SalesReturnShipping", back_populates="shipping_item")
 
 def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10, sort_by=None):
     query = db.query(ShippingItem)

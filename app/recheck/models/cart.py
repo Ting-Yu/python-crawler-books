@@ -19,8 +19,8 @@ class Cart(sqlalchemy_config.Base):
     created_at = Column(DateTime, nullable=True, default=func.now())
     updated_at = Column(DateTime, nullable=True, onupdate=func.now())
 
-    # book = relationship("Book", back_populates="carts")
-    # member = relationship("Member", back_populates="carts")
+    book = relationship("Book", back_populates="carts")
+    member = relationship("Member", back_populates="carts")
 
 
 def get_cart_by_book_id(db: sqlalchemy_config.Session, book_id: int):

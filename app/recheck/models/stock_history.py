@@ -31,8 +31,8 @@ class StockHistory(sqlalchemy_config.Base):
 
     stock = relationship("Stock", back_populates="stock_histories")
     stock_item = relationship("StockItem", back_populates="stock_histories")
-    # book = relationship("Book", back_populates="stock_histories")
-    # created_by_member = relationship("Member", back_populates="stock_histories")
+    book = relationship("Book", back_populates="stock_histories")
+    created_by_member = relationship("Member", back_populates="stock_histories")
 
 
 def get_stock_history_by_book_id(db: sqlalchemy_config.Session, book_id: int):

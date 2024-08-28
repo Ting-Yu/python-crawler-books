@@ -25,8 +25,8 @@ class StockItem(sqlalchemy_config.Base):
     updated_at = Column(DateTime, nullable=True, onupdate=func.now())
 
     stock = relationship("Stock", back_populates="stock_items")
-    # stock_histories = relationship("StockHistory", back_populates="stock_item")
-    # book = relationship("Book", back_populates="stock_items")
+    stock_histories = relationship("StockHistory", back_populates="stock_item")
+    book = relationship("Book", back_populates="stock_items")
 
 
 def get_stock_item_by_book_id(db: sqlalchemy_config.Session, book_id: int):

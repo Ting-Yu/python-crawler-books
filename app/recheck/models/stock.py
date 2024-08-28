@@ -11,7 +11,7 @@ class Stock(sqlalchemy_config.Base):
     __tablename__ = 'stocks'
 
     stock_id = Column(String(255), primary_key=True)
-    purchase_id = Column(String(255), nullable=True)
+    purchase_id = Column(String(255), ForeignKey('purchases.purchase_id'), nullable=True)
     supplier_id = Column(BigInteger, ForeignKey('suppliers.supplier_id'), nullable=False)
     status = Column(String(255), nullable=False, default='pending', comment='pending, processing, completed, cancelled')
     remark = Column(Text, nullable=True)
@@ -26,12 +26,11 @@ class Stock(sqlalchemy_config.Base):
     created_at = Column(DateTime, nullable=True, default=func.now())
     updated_at = Column(DateTime, nullable=True, onupdate=func.now())
 
-    # supplier = relationship("Supplier", back_populates="stocks")
-    # created_by_member = relationship("Member", back_populates="stocks")
-    # purchase = relationship("Purchase", back_populates="stocks")
+    supplier = relationship("Supplier", back_populates="stocks")
+    created_by_member = relationship("Member", back_populates="stocks")
+    purchase = relationship("Purchase", back_populates="stocks")
     stock_items = relationship("StockItem", back_populates="stock")
-    # stock_histories = relationship("StockHistory", back_populates="stock")
-
+    stock_histories = relationship("StockHistory", back_populates="stock")
 
 def get_paginated_stocks(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Stock)

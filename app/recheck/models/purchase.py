@@ -18,7 +18,7 @@ class Purchase(sqlalchemy_config.Base):
     supplier = relationship("Supplier", back_populates="purchases")
     member = relationship("Member", back_populates="purchases")
     purchase_items = relationship("PurchaseItem", back_populates="purchase")
-    # stocks = relationship("Stock", back_populates="purchase")
+    stocks = relationship("Stock", back_populates="purchase")
 
 def get_paginated_purchases(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Purchase)

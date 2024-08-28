@@ -31,6 +31,8 @@ class Shipping(sqlalchemy_config.Base):
     creator = relationship("Member", foreign_keys=[created_by])
 
     shipping_items = relationship("ShippingItem", back_populates="shipping")
+    sales_return_shipping = relationship("SalesReturnShipping", back_populates="shipping")  # 添加這行
+
 
 def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Shipping)

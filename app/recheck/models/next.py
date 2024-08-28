@@ -16,8 +16,8 @@ class Next(sqlalchemy_config.Base):
     created_at = Column(DateTime, nullable=True, default=func.now())
     updated_at = Column(DateTime, nullable=True, onupdate=func.now())
 
-    # book = relationship("Book", back_populates="nexts")
-    # member = relationship("Member", back_populates="nexts")
+    book = relationship("Book", back_populates="nexts")
+    member = relationship("Member", back_populates="nexts")
 
 def get_next_by_book_id(db: sqlalchemy_config.Session, book_id: int):
     return db.query(Next).filter(Next.book_id == book_id).all()

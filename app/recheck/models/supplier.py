@@ -41,7 +41,7 @@ class Supplier(sqlalchemy_config.Base):
     checked_price = Column(Integer, nullable=False, default=0)
 
     purchases = relationship("Purchase", back_populates="supplier")
-    # stocks = relationship("Stock", back_populates="supplier")
+    stocks = relationship("Stock", back_populates="supplier")
 
 def get_all_suppliers(db: sqlalchemy_config.Session, filters: list, skip: int = 0, limit: int = 30):
     query = db.query(Supplier)
