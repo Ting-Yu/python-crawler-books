@@ -86,10 +86,16 @@ def get_book_by_ids(db: sqlalchemy_config.Session, book_ids: list):
 
 
 def get_book_by_isbns(db: sqlalchemy_config.Session, isbns: list):
-    return db.query(Book).filter(Book.isbn.in_(isbns)).all()
+    query =db.query(Book)
+    query = query.filter(Book.isbn.in_(isbns))
+    query = query.filter(Book.status != 99)
+    return query.all()
 
 def get_book_by_titles(db: sqlalchemy_config.Session, titles: list):
-    return db.query(Book).filter(Book.title.in_(titles)).all()
+    query =db.query(Book)
+    query = query.filter(Book.title.in_(titles))
+    query = query.filter(Book.status != 99)
+    return query.all()
 
 
 def get_book_by_isbn(db: sqlalchemy_config.Session, isbn: str):

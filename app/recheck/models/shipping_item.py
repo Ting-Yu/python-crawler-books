@@ -46,6 +46,9 @@ def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1
 def get_shipping_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: int):
     return db.query(ShippingItem).filter(ShippingItem.temp_isbn == temp_isbn).all()
 
+def get_shipping_item_by_temp_book_name(db: sqlalchemy_config.Session, temp_book_name: str):
+    return db.query(ShippingItem).filter(ShippingItem.temp_book_name == temp_book_name).all()
+
 def update_shipping_item_by_temp_isbn(db: sqlalchemy_config.Session, temp_isbn: int, updates: dict):
     shipping_items = db.query(ShippingItem).filter(ShippingItem.temp_isbn == temp_isbn).all()
     if shipping_items:

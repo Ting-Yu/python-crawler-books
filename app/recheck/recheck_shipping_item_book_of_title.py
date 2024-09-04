@@ -67,7 +67,7 @@ def recheck_shipping_item_book():
             # input("Press Enter to continue...")
             print(f"{updates}")
             # input("Press Enter to continue...")
-            # shipping_model.update_shipping_item_in_chunks(db, updates)
+            shipping_model.update_shipping_item_in_chunks(db, updates)
 
         page += 1
 
