@@ -40,7 +40,16 @@ def get_paginated_shippings(db: sqlalchemy_config.Session, filters: list, page=1
         query = query.filter(filter_condition)
     return paginate(query, page, page_size)
 
-def update_shipping_by_id(db: sqlalchemy_config.Session, shipping_id: int, updates: dict):
+def get_shipping_by_shipping_id(db: sqlalchemy_config.Session, shipping_id: str):
+    return db.query(Shipping).filter(Shipping.shipping_id == shipping_id).first()
+
+def get_shipping_by_temp_member_name(db: sqlalchemy_config.Session, temp_member_name: str):
+    query = db.query(Shipping)
+    query = query.filter(Shipping.member_id.is_(None))
+    query = query.filter(Shipping.temp_member_name == temp_member_name)
+    return query.all()
+
+def update_shipping_by_id(db: sqlalchemy_config.Session, shipping_id: str, updates: dict):
     shipping = db.query(Shipping).filter(Shipping.shipping_id == shipping_id).first()
     if shipping:
         for key, value in updates.items():

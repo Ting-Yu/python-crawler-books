@@ -37,3 +37,13 @@ def get_paginated_stocks(db: sqlalchemy_config.Session, filters: list, page=1, p
     for filter_condition in filters:
         query = query.filter(filter_condition)
     return paginate(query, page, page_size)
+
+def update_stock_by_id(db: sqlalchemy_config.Session, stock_id: int, updates: dict):
+    stock = db.query(Stock).filter(Stock.stock_id == stock_id).first()
+    if stock:
+        for key, value in updates.items():
+            if hasattr(stock, key):
+                setattr(stock, key, value)
+        db.commit()
+        db.refresh(stock)
+    return stock

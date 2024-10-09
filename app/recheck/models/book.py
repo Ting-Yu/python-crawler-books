@@ -86,13 +86,14 @@ def get_book_by_ids(db: sqlalchemy_config.Session, book_ids: list):
 
 
 def get_book_by_isbns(db: sqlalchemy_config.Session, isbns: list):
-    query =db.query(Book)
+    query = db.query(Book)
     query = query.filter(Book.isbn.in_(isbns))
     query = query.filter(Book.status != 99)
     return query.all()
 
+
 def get_book_by_titles(db: sqlalchemy_config.Session, titles: list):
-    query =db.query(Book)
+    query = db.query(Book)
     query = query.filter(Book.title.in_(titles))
     query = query.filter(Book.status != 99)
     return query.all()
@@ -208,6 +209,7 @@ def update_chunk(db: Session, chunk: list):
     )
     if db.in_transaction():
         db.commit()
+
 
 def delete_book_by_id(db: sqlalchemy_config.Session, book_id: int):
     book = db.query(Book).filter(Book.book_id == book_id).first()

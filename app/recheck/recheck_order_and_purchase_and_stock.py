@@ -125,8 +125,8 @@ def export_stocks_to_excel(stock, books):
         purchase_discount = book.purchase_discount
         tax = book.tax
         in_stock_amount = item.in_stock_amount
-        # current_price = price
-        # current_total_price += real_round(current_price * in_stock_amount, 0)
+        current_price = price
+        current_total_price += real_round(current_price * in_stock_amount, 0)
         # print(
         #     f" Current Price: {current_price}, Book Price: {price}, Book Sale Discount: {book.sale_discount}")
 
@@ -155,8 +155,8 @@ def export_stocks_to_excel(stock, books):
 
     # sheet[f"C{order_row_num}"] = current_total_price
     db = sqlalchemy_config.get_db()
-    # order_model.update_order_by_id(db, stock_id,
-    #                                {"total_price": current_total_price})
+    stock_model.update_stock_by_id(db, stock_id,
+                                   {"total_price": current_total_price})
 
 
 def use_get_all_orders():
@@ -168,49 +168,17 @@ def use_get_all_orders():
     while True:
         paginated_result = order_model.get_paginated_orders(db, [
             order_model.Order.order_id.in_([
-                "pom202408060002904",
-                "pom202408060103501",
-                "pom202408060000301",
-                "pom202408060223201",
-                "pom202408060468501",
-                "pom202408050103602",
-                "pom202408070231001",
-                "pom202408080454301",
-                "pom202408080103602",
-                "pom20240808100000301",
-                "pom1720061851",
-                "pom1720082663",
-                "pom1720082785",
-                "pom202407050000305",
-                "pom202407050000306",
-                "pom1720082785",
-                "pom202407080208616",
-                "pom1720080532",
-                "pom202407050207111",
-                "pom202408080204901",
-                "pom202408120467001",
-                "pom202408120103603",
-                "pom202408120461601",
-                "pom202408090003001",
-                "pom202408080003001",
-                "pom202408140002801",
-                "pom202408120223201",
-                "pom202408140208601",
-                "sim20240819100000301",
-                "sim202408160231005",
-                "sim202408160003002",
-                "pom202408200103603",
-                "pom202407220208602",
-                "sim202408160218901",
                 "pom202408260454001",
                 "pom202408260229101",
                 "sim202408280002701",
-                "sim202408110204901",
                 "pom20240828100001901",
-                "som202408300033101",
-                "sim202408100208602",
-                "sim202408110208601",
-                "som202409010017102",
+                "com202408160039801",
+                "com202408240038803",
+                "com202408160020301",
+                "com202408160039701",
+                "com202408170004001",
+                "com202408190032501",
+                "com202408200024501",
             ])
         ], page=page, page_size=page_size)
         orders = paginated_result.items
@@ -271,49 +239,17 @@ def use_get_all_purchases():
     while True:
         paginated_result = purchase_model.get_paginated_purchases(db, [
             purchase_model.Purchase.purchase_id.in_([
-                "pom202408060002904",
-                "pom202408060103501",
-                "pom202408060000301",
-                "pom202408060223201",
-                "pom202408060468501",
-                "pom202408050103602",
-                "pom202408070231001",
-                "pom202408080454301",
-                "pom202408080103602",
-                "pom20240808100000301",
-                "pom1720061851",
-                "pom1720082663",
-                "pom1720082785",
-                "pom202407050000305",
-                "pom202407050000306",
-                "pom1720082785",
-                "pom202407080208616",
-                "pom1720080532",
-                "pom202407050207111",
-                "pom202408080204901",
-                "pom202408120467001",
-                "pom202408120103603",
-                "pom202408120461601",
-                "pom202408090003001",
-                "pom202408080003001",
-                "pom202408140002801",
-                "pom202408120223201",
-                "pom202408140208601",
-                "sim20240819100000301",
-                "sim202408160231005",
-                "sim202408160003002",
-                "pom202408200103603",
-                "pom202407220208602",
-                "sim202408160218901",
                 "pom202408260454001",
                 "pom202408260229101",
                 "sim202408280002701",
-                "sim202408110204901",
                 "pom20240828100001901",
-                "som202408300033101",
-                "sim202408100208602",
-                "sim202408110208601",
-                "som202409010017102",
+                "com202408160039801",
+                "com202408240038803",
+                "com202408160020301",
+                "com202408160039701",
+                "com202408170004001",
+                "com202408190032501",
+                "com202408200024501",
             ])
         ], page=page, page_size=page_size)
         purchases = paginated_result.items
@@ -376,49 +312,19 @@ def use_get_all_stocks():
     while True:
         paginated_result = stock_model.get_paginated_stocks(db, [
             stock_model.Stock.stock_id.in_([
-                "pom202408060002904",
-                "pom202408060103501",
-                "pom202408060000301",
-                "pom202408060223201",
-                "pom202408060468501",
-                "pom202408050103602",
-                "pom202408070231001",
-                "pom202408080454301",
-                "pom202408080103602",
-                "pom20240808100000301",
-                "pom1720061851",
-                "pom1720082663",
-                "pom1720082785",
-                "pom202407050000305",
-                "pom202407050000306",
-                "pom1720082785",
-                "pom202407080208616",
-                "pom1720080532",
-                "pom202407050207111",
-                "pom202408080204901",
-                "pom202408120467001",
-                "pom202408120103603",
-                "pom202408120461601",
-                "pom202408090003001",
-                "pom202408080003001",
-                "pom202408140002801",
-                "pom202408120223201",
-                "pom202408140208601",
-                "sim20240819100000301",
-                "sim202408160231005",
-                "sim202408160003002",
-                "pom202408200103603",
-                "pom202407220208602",
-                "sim202408160218901",
-                "pom202408260454001",
-                "pom202408260229101",
-                "sim202408280002701",
-                "sim202408110204901",
-                "pom20240828100001901",
-                "som202408300033101",
+                # "pom202408260454001",
+                # "pom202408260229101",
+                # "sim202408280002701",
+                # "pom20240828100001901",
+                # "com202408160039801",
+                # "com202408240038803",
+                # "com202408160020301",
+                # "com202408160039701",
+                # "com202408170004001",
+                # "com202408190032501",
+                # "com202408200024501",
                 "sim202408100208602",
                 "sim202408110208601",
-                "som202409010017102",
             ])
         ], page=page, page_size=page_size)
         stocks = paginated_result.items
@@ -494,7 +400,7 @@ if __name__ == '__main__':
     yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     #
     # # use_get_all_books()
-    use_get_all_orders()
+    # use_get_all_orders()
     #
     # # Save the workbook
     # workbook.save("orders.xlsx")
@@ -519,7 +425,7 @@ if __name__ == '__main__':
     # # Define yellow fill pattern
     # yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     #
-    use_get_all_purchases()
+    # use_get_all_purchases()
     #
     # # Save the workbook
     # workbook.save("purchases.xlsx")

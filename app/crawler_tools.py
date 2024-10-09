@@ -159,11 +159,24 @@ def extract_book_info(url, soup):
     title_elem = title_div_elem.h1 if title_div_elem and hasattr(title_div_elem, 'h1') else None
     title = title_elem.text.strip() if title_elem else None
 
-    author_elem = soup.find('a', href=lambda x: x and 'adv_author' in x)
-    author = author_elem.text.strip() if author_elem else None
+    parent_div = soup.find('div', class_='type02_p003 clearfix')
+    author_elems = parent_div.find_all('a', href=lambda x: x and 'adv_author' in x) if parent_div else []
 
-    translator_elems = soup.find_all('a', href=lambda x: x and 'adv_author' in x)
-    translator = translator_elems[1].text.strip() if len(translator_elems) > 1 else None
+    author = None
+    author_foreign = None
+    translator = None
+    draftsman = None
+
+    for elem in author_elems:
+        previous_text = elem.find_previous(text=True).strip() if elem.find_previous(text=True) else ''
+        if '作者' in previous_text and author is None:
+            author = elem.text.strip()
+        elif '原文作者' in previous_text and author_foreign is None:
+            author_foreign = elem.text.strip()
+        elif '譯者' in previous_text and translator is None:
+            translator = elem.text.strip()
+        elif '繪者' in previous_text and draftsman is None:
+            draftsman = elem.text.strip()
 
     publisher_elem = soup.find('a', href=lambda x: x and 'sys_puballb' in x)
     publisher = publisher_elem.span.text.strip() if publisher_elem and hasattr(publisher_elem, 'span') else None
@@ -220,8 +233,9 @@ def extract_book_info(url, soup):
         '出版社名稱': publisher,
         '出版日期': publish_date,
         '作者中文名': author,
-        '作者外文名': None,
+        '作者外文名': author_foreign,
         '譯者': translator,
+        '繪者': draftsman,
         'ISBN/ISSN': isbn,
         '定價': price,
         '中國圖書分類號': None,
