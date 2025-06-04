@@ -33,7 +33,7 @@ def check_sale_return_items(db):
         sales_return_item_id = sales_return_item.id
         temp_isbn = sales_return_item.temp_isbn
 
-        book = book_model.get_book_by_isbn(db, temp_isbn)
+        book = book_model.first_book_by_isbn(db, temp_isbn)
         if book:
             book_id = book.book_id
             print(f"Sales Return Item ID: {sales_return_item_id} | Book ID: {book_id} = {book.title}")

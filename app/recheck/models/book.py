@@ -98,10 +98,17 @@ def get_book_by_titles(db: sqlalchemy_config.Session, titles: list):
     query = query.filter(Book.status != 99)
     return query.all()
 
-
 def get_book_by_isbn(db: sqlalchemy_config.Session, isbn: str):
+    return db.query(Book).filter(Book.isbn == isbn).all()
+
+def first_book_by_isbn(db: sqlalchemy_config.Session, isbn: str):
     return db.query(Book).filter(Book.isbn == isbn).first()
 
+def get_book_by_title(db: sqlalchemy_config.Session, title: str):
+    return db.query(Book).filter(Book.title == title).all()
+
+def first_book_by_title(db: sqlalchemy_config.Session, title: str):
+    return db.query(Book).filter(Book.title == title).first()
 
 def get_paginated_books(db: sqlalchemy_config.Session, filters: list, page=1, page_size=10):
     query = db.query(Book)

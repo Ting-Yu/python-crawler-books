@@ -162,6 +162,7 @@ def extract_book_info(url, soup):
     parent_div = soup.find('div', class_='type02_p003 clearfix')
     author_elems = parent_div.find_all('a', href=lambda x: x and 'adv_author' in x) if parent_div else []
 
+    # 解析作者、譯者、繪者
     author = None
     author_foreign = None
     translator = None
@@ -195,10 +196,9 @@ def extract_book_info(url, soup):
 
     spec_elem = soup.find('li', string=lambda x: x and '規格' in x)
     if spec_elem:
-        spec = spec_elem.text.strip().split('：')[-1]
-        # 使用 '/' 符號進行切割
-        spec_parts = spec.split('/')
-        spec = [part.strip() for part in spec_parts]
+        spec_raw = spec_elem.text.strip().split('：')[-1]
+        spec_parts = spec_raw.split('/')
+        spec = [part.strip() for part in spec_parts if part.strip()]
     else:
         spec = []
 
@@ -208,21 +208,23 @@ def extract_book_info(url, soup):
     img_elem = soup.find('img', {'class': 'cover M201106_0_getTakelook_P00a400020052_image_wrap'})
     img_url = img_elem['src'] if img_elem else None
 
-    # Finding "內容簡介"
-    content_intro = ''
+    # 內容簡介
+    content_intro = None
     content_intro_heading = soup.find(lambda tag: tag.name == "h3" and "內容簡介" in tag.text)
     if content_intro_heading and content_intro_heading.find_next_sibling("div"):
         content_intro = content_intro_heading.find_next_sibling("div").text.strip()
-    # else:
-    #     print("內容簡介 not found or has no following div.")
 
-    # Finding "作者介紹"
-    author_intro = ''
+    # 作者介紹
+    author_intro = None
     author_intro_heading = soup.find(lambda tag: tag.name == "h3" and "作者介紹" in tag.text)
     if author_intro_heading and author_intro_heading.find_next_sibling("div"):
         author_intro = author_intro_heading.find_next_sibling("div").text.strip()
-    # else:
-    #     print("作者介紹 not found or has no following div.")
+
+    # 目錄
+    agenda = None
+    agenda_heading = soup.find(lambda tag: tag.name == "h3" and "目錄" in tag.text)
+    if agenda_heading and agenda_heading.find_next_sibling("div"):
+        agenda = agenda_heading.find_next_sibling("div").text.strip()
 
     return {
         '網址': url,
@@ -251,7 +253,7 @@ def extract_book_info(url, soup):
         '圖片': img_url,
         '作者簡介': author_intro,
         '內容簡介': content_intro,
-        '目錄': None,
+        '目錄': agenda,
         '得獎與推薦紀錄': None,
         '重要事件': None
     }

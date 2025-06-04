@@ -215,7 +215,7 @@ def modify_data(book_info, db, temp_book_name):
 
 
         book_model.upsert_book(db, upsert_data)
-        book = book_model.get_book_by_isbn(db, isbn)
+        book = book_model.first_book_by_isbn(db, isbn)
 
         if book:
             print(f"Book ID: {book.book_id} of {book.title}")

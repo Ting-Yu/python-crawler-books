@@ -82,7 +82,7 @@ def change_book_id(isbn, book_info):
     book_info_new_book_id = book_info["new_book_id"]
 
     db = sqlalchemy_config.get_db()
-    new_book = book_model.get_book_by_isbn(db, book_info_isbn)
+    new_book = book_model.first_book_by_isbn(db, book_info_isbn)
     new_book_id = new_book.book_id
 
     old_book = book_model.get_book_by_id(db, book_info_old_book_id)

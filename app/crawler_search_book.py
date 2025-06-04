@@ -105,7 +105,7 @@ def is_valid_isbn(isbn: str) -> bool:
 
 if __name__ == "__main__":
 
-    url = "https://search.books.com.tw/search/query/key/9789861339368"
+    url = "https://search.books.com.tw/search/query/key/9786264181464"
     # url = f"https://search.books.com.tw/search/query/key/{isbn}"
 
     # mode = input("Enter 'api' to run as API, or 'local' to run locally: ")

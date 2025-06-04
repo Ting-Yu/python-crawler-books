@@ -23,7 +23,7 @@ url_iterator = cycle(urls)
 
 def crawler_book(db,isbn):
 
-    exist_book = book_model.get_book_by_isbn(db,isbn)
+    exist_book = book_model.first_book_by_isbn(db,isbn)
     if exist_book:
         print(f"Book Exist: {isbn}")
         return
