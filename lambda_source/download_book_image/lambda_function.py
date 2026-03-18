@@ -91,9 +91,18 @@ def find_cheapest_book(soup):
                             cheapest_book_url = url_elem['href']
 
     if cheapest_book_url:
-        cheapest_book_url = 'https:' + cheapest_book_url
-        # print(cheapest_book_url)
-        return crawl_book_info(cheapest_book_url)
+        # 從 redirect URL 中提取 product ID，構建直接產品頁 URL
+        product_url = cheapest_book_url
+        if '/redirect/move/' in cheapest_book_url and '/item/' in cheapest_book_url:
+            item_match = re.search(r'/item/(\w+)/', cheapest_book_url)
+            if item_match:
+                product_id = item_match.group(1)
+                product_url = f'https://www.books.com.tw/products/{product_id}'
+            else:
+                product_url = 'https:' + cheapest_book_url
+        else:
+            product_url = 'https:' + cheapest_book_url
+        return crawl_book_info(product_url)
 
     return image_info
 
@@ -116,8 +125,11 @@ def crawl_book_info(url):
     #     'url':url
     # }
 
-    # 使用同一個 scraper 實例（已帶有 Cloudflare cookies）+ 重試機制
-    soup = tools.get_page_content(url, custom_scraper=scraper, max_retries=3)
+    # 為產品頁建立新的 scraper 實例，避免搜尋頁 session 干擾
+    product_scraper = cloudscraper.create_scraper(
+        browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
+    )
+    soup = tools.get_page_content(url, custom_scraper=product_scraper)
 
     image_info = {
         'statusCode': 'crawl book info run soup'
@@ -148,8 +160,8 @@ def crawl_book_info(url):
             img_filename = f"download_{filename.split('.')[0]}.jpg"
             # img_filename = tools.download_image(img_url, img_filename)  # Pass the logger instance as an argument
 
-            # 從 URL 下載圖片
-            response = scraper.get(img_url, stream=True)
+            # 從 URL 下載圖片（使用產品頁的 scraper）
+            response = product_scraper.get(img_url, stream=True)
             response.raise_for_status()
 
             # print('img_filename', img_filename)

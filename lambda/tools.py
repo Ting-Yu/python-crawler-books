@@ -56,17 +56,24 @@ def create_directory(dir_name):
     os.makedirs(dir_name, exist_ok=True)
 
 
-def get_page_content(url, custom_scraper=None, max_retries=3):
+def get_page_content(url, custom_scraper=None, max_retries=5):
     _scraper = custom_scraper or scraper
     for attempt in range(max_retries):
         try:
             response = _scraper.get(url, timeout=30, allow_redirects=True)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
-                # 檢查是否被 Cloudflare 或網站阻擋
-                if "瀏覽方式錯誤" in soup.text or "Please check your ip address" in soup.text or "Just a moment" in soup.text:
+                # 檢查是否被 Cloudflare 或網站阻擋（含 JS 挑戰頁面）
+                page_text = soup.text
+                is_blocked = (
+                    "瀏覽方式錯誤" in page_text
+                    or "Please check your ip address" in page_text
+                    or "Just a moment" in page_text
+                    or "__cf_chl_tk" in response.text[:5000]
+                )
+                if is_blocked:
                     if attempt < max_retries - 1:
-                        time.sleep(random.randint(2, 4))
+                        time.sleep(random.uniform(3, 6))
                         # 建立新 scraper 重試（指定桌面版瀏覽器）
                         _scraper = cloudscraper.create_scraper(
                             browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
@@ -76,12 +83,12 @@ def get_page_content(url, custom_scraper=None, max_retries=3):
                 return soup
             else:
                 if attempt < max_retries - 1:
-                    time.sleep(random.randint(1, 3))
+                    time.sleep(random.uniform(2, 4))
                     continue
                 return None
         except (requests.exceptions.HTTPError, requests.exceptions.RequestException):
             if attempt < max_retries - 1:
-                time.sleep(random.randint(1, 3))
+                time.sleep(random.uniform(2, 4))
                 continue
             return None
     return None
